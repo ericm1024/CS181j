@@ -1,0 +1,483 @@
+\documentclass[11pt]{article}
+
+% This is a toggle for whether the solutions should be included in output of this document
+\newif\ifSolutions
+%\Solutionsfalse  % this is used to exclude the solutions
+\Solutionstrue  % this is used to include the solutions
+
+\input{../latexDefinitions}
+
+\head{1}{Wednesday, Sept 9, 2015}{Wednesday, Sept 16, 2015}
+
+\eprob{5}{Getting to know your computer}
+
+Class, meet \texttt{shuffler}.  \texttt{shuffler}, meet the class. You can \texttt{ssh} onto shuffler just as you normally \texttt{ssh} onto \texttt{knuth} or any other cs machine. 
+
+Whenever you start working on a computer, it's important to get an idea of what it is.  Let's walk through some ways of finding the characteristics that are important to us.
+
+\begin{enumerate}[a)]
+
+\item First, it's important to know what processor \texttt{shuffler} has.  To do this, you can open the file \texttt{/proc/cpuinfo} in an editor or just \texttt{cat} it to the terminal ``\texttt{cat /proc/cpuinfo}''.  What is the processor model number?  (don't forgot the ``v2'' part!)
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Google the model number and find a page on the \texttt{ark.intel.com} site for the processor.  How many cores does this processor have?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item In \texttt{/proc/cpuinfo}, it will list more ``processors'' than the number of cores Intel claims.  Using the word ``processor'' here is a terrible abuse of nomenclature - what they really mean is ``thing on which I can schedule threads''.  The reason why this is not the same as the number of cores you see online is for two reasons: one is hyperthreading and the other is that we actually have more than one of these processors plugged into \texttt{shuffler's} motherboard.  To eliminate the effect of hyperthreading, divide the number of ``things on which I can schedule threads'' you find in \texttt{/proc/cpuinfo} by 2, which gives you how many total, actual, physical cores there are on \texttt{shuffler}.  Given that number and the number of cores on a single processor that Intel claims on the website, how many copies of this processor must we have plugged into \texttt{shuffler}?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Intel's marketing page is full of, well, marketing, but it doesn't tell you some important things about the cache structure.  You can get some of this information from the utility \texttt{getconf}.  Enter ``\texttt{getconf LEVEL1\_CACHE\_SIZE}'' in your terminal.  Unfortunately, this will give you an error because the level 1 cache is actually split into two sections: a data cache and an instruction cache.  What is the size (in kilobytes) of the level 1 data cache? (``\texttt{getconf LEVEL1\_DCACHE\_SIZE}'')
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item What is the size of the level 1 instruction cache? (``\texttt{getconf LEVEL1\_ICACHE\_SIZE}'')
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item What is the size of the level 2 cache? (``\texttt{getconf LEVEL2\_CACHE\_SIZE}'')
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item What is the size of the level 3 cache? (``\texttt{getconf LEVEL3\_CACHE\_SIZE}'')
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Now we'll look at cache line sizes.  What is the size of the cache lines of each cache we measured above?  (You can get the line size with ``\texttt{getconf someCacheName\_LINESIZE}'' like ``\texttt{getconf LEVEL2\_CACHE\_LINESIZE}'');
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Lastly, we'll look at the amount of memory on the machine.  You can get this by looking at the file \texttt{/proc/meminfo} just like you looked at \texttt{/proc/cpuinfo}.  How much total memory is there on \texttt{shuffler}?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+
+
+
+
+
+
+
+
+
+
+
+
+\eprob{35}{Matrix Multiplications, Flops, and Cache Misses}
+
+We are going to look at how an algorithm's cache-friendliness can affect its runtime, and our example will be matrix multiplication.  You will measure the runtime and the flops per cache miss when multiplying two matrices in cache-unfriendly and cache-friendly ways.  
+
+Your copy of the class repo contains starter code and post processing utilities.  \texttt{Main0.cc} is a fully-functioning example that uses \texttt{PAPI} to record the number of floating point division operations performed while generating random numbers. \texttt{Main2.cc} has a good amount of the logic for your solution, but you'll need to add \texttt{PAPI} goodies to it.  \texttt{Main2\_functions.cc} has the functions where you'll actually implement the algorithms.
+
+You should generate plots using the provided \texttt{generatePlots2.py}.  The executable (\texttt{Main2}) generates a \texttt{csv} file with data in the \texttt{data} subdirectory. \texttt{generatePlots2.py} looks for data there and uses \href{http://matplotlib.org/}{Matplotlib} to make plots in the \texttt{figures} subdirectory. You are welcome to modify this script however you'd like, but you shouldn't need to in order to make the necessary plots. This general pattern will be common to all the assignments.
+
+
+\begin{enumerate}[a)]
+
+\item Implement rowMajor * columnMajor (cache-friendly) and columnMajor * rowMajor (cache-unfriendly) matrix multiplication using the naive triple-nested loop method shown below.  Your implementations will go into \texttt{Main2\_functions.h} in their respective functions.
+
+\begin{verbatim}
+  for (unsigned int row = 0; row < matrixSize; ++row) {
+    for (unsigned int col = 0; col < matrixSize; ++col) {
+      resultMatrix(row, col) = 0
+      for (unsigned int k = 0; k < matrixSize; ++k) {
+        resultMatrix(row, col) += leftMatrix(row, k) * rightMatrix(k, col)
+      }
+    }
+  }
+\end{verbatim}
+
+\noindent Though the majorness of the result matrix does affect our timing, just use row-major storage for the result matrix so that everyone's on the same page.  Note that the provided implementation already makes sure that the answers you get are consistent across all methods; don't disable this error checking if you're having incorrect values.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Implement a version of the naive rowMajor * columnMajor method (``improved rowCol'') that incorporates ideas discussed in class for improving the summation. Predict the relationship between the number of flops per cache miss for the ``improved rowCol'' version and the number of flops per cache miss of the rowCol and colRow versions.  This implementation also goes into \texttt{Main2\_functions.h}.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item You should now have three versions of matrix multiplication.  We'd like to see what percent of \texttt{shuffler}'s peak flops rate each version achieves. \texttt{shuffler} has a processor with what's called ``Turbo Boost,'' which will turn up the clock speed of a single core if the other cores aren't being used.  Because you're running single-threaded programs right now, that means that you can potentially get their Turbo Boost speed (2.6GHz) instead of the normal speed (2.1GHz) that you found in \texttt{/proc/cpuinfo}.  For this problem, we'll ignore the fact that we're not using vectorization and threading, which means that the peak flops rate you can achieve on \texttt{shuffler} is 2.6 Gigaflops.
+
+Run the executable and the post processing script, which will exercise the three implementations for many sizes of matrices and make a plot of the achieved flops rate versus matrix size, as a percent of the peak flops rate. What do you learn from the features of this plot?  Is anything surprising?
+
+Note: The code doesn't measure floating point operations, it just uses the analytic solution that the number of flops performed for a matrix multiplication for matrices of size $n$ is $2n^3$.
+
+\ifSolutions
+\textbf{Solution:}
+
+\Figure{figures/Main2_FlopsRate_shuffler}{Achieved Flops rate versus Matrix Size}{4}
+
+\fi
+
+\item Using the provided \href{http://icl.cs.utk.edu/PAPI/}{PAPI} example (\texttt{Main0.cc}) as a template, measure the number of level 1 (L1) cache misses incurred in each version of matrix multiplication, similar to how the elapsed time is recorded in \texttt{Main2.cc} right now.  You shouldn't be adding any \texttt{PAPI} goobers into \texttt{Main2\_functions.h}.  Right now, there's an unused variable for cache misses in \texttt{Main2.cc} already, you just need to populate it.  Use the post-processing script to make a plot of the number of cache misses versus matrix size for your three methods, and comment on your results.
+
+\ifSolutions
+\textbf{Solution:}
+
+\Figure{figures/Main2_CacheMisses_shuffler}{Number of Cache Misses versus Matrix Size}{4}
+
+\fi
+
+\item Use the post-processing script to make a plot of the flops per level 1 cache miss for all methods.  How good was your prediction for the ``improved rowCol'' method?
+
+\ifSolutions
+\textbf{Solution:}
+
+\Figure{figures/Main2_FlopsPerCacheMiss_shuffler}{Number of Cache Misses versus Matrix Size}{4}
+
+\fi
+
+\item Do the ``flops per cache miss'' results match our predictions from class?  Is there anything that surprises you?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\afterpage{\clearpage}
+
+\vfill
+
+
+
+
+
+
+
+
+
+%\newpage
+
+\eprob{10}{On your marks...}
+Write a program that achieves the highest flops rate you can get.  You must use \texttt{PAPI} to verify that over $1e9$ flops were performed.  Do something more complicated than adding or multiplying two constant numbers (something that the compiler would optimize out anyways). What percent of the computer's peak (single-threaded, non-vectorized) flop rate do you achieve? What percent of the computer's peak (threaded, vectorized) flop rate do you achieve?  Some notes:
+
+\begin{itemize}
+\item{You do not need to achieve a \textit{flops rate} of over $1e9$, you just need to \textit{perform} at least $1e9$ floating point operations.  This is just to help you not get spurious results - it's easy to get very high flops rates when you only do a small number of flops, because timing is imprecise.}
+
+\item{Once or twice someone has come up with an example that breaks \texttt{PAPI}: it measures a flops rate that's far higher than anything possible on the computer.  If you do make one of those examples, make sure you're timing and counting correctly.  If you are, congratulations!  We should probably submit a bug report to the \texttt{PAPI} people.}
+
+\item{See the note on Piazza about how to use \texttt{volatile} to keep the optimizer from entirely removing the code that you're trying to time.}
+
+\item{You do not have to break world records for this - there is no required flops rate you need to achieve.  I just want you to explore and play around with things to get a better feel for what kind of flops rates you can get out of different types of programs.  You're only competing with each other for eternal glory, not the points.}
+\end{itemize}
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\vfill
+
+
+
+
+
+
+
+
+
+
+%\newpage
+
+\eprob{10}{Faster computers fix everything}
+Let's say that your job in life is to calculate the sum of squares of numbers.  You write a program that takes a large collection of numbers, squares them, and sums the squares.  That's all. This job is boring, so you want it to go faster; let's explore the effect of getting a faster computer.  
+
+We'll say that a cache hit costs 1 nanosecond (not clock cycle, nanosecond) and a cache miss costs 100 nanoseconds.  We'll say that you have a 2GHz core and you can do one multiply per clock cycle (not nanosecond, clock cycle).  Adding is free, for some reason.
+
+You buy an (imaginary) upgraded version of the processor that has twice the clock rate (4GHz) but the same cache (still 1ns for a cache hit, still 100ns for a cache miss) and still does one multiply per cycle.
+
+Neither of these computers supports out of order execution because they're specialty processors for specific devices.  Or something.
+
+\begin{enumerate}[a)]
+\item You've doubled your clock speed, but unfortunately your total runtime is not just a function of clock speed but is also a function of your cache hit rate. What is the minimum cache hit rate for which upgrading from the 2Ghz processor to the 4Ghz processor will result in a 10\% decrease in runtime? What cache hit rate do you need for the processor upgrade to decrease runtime by 20\%? What about 50\%?"
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Assume that you're stuck at a cache hit rate of 95\%.  By what percentage (compared to the 2GHz model) could you reduce your total runtime if you got an infinitely fast processor (1 GoogolHz or something)?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\vfill
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%\newpage
+
+\eprob{15}{Loop fission}
+While I was preparing for class, I looked at a lot of online material on high performance computing, of varying quality.  One of the examples said that you can improve the following ``memory intensive'' code snippet by splitting up the loop into three loops, something we'll call \textit{loop fission}.
+
+That is, instead of this code snippet:
+
+\begin{verbatim}
+f12, f21 = [n x n matrices stored in a contiguous array]
+input_i, input_j = [contiguous arrays of size n]
+[begin counting cache misses]
+for (int i = 0; i < n; ++i) {
+  for (int j = 0; j < n; ++j) {
+    f12(i, j) = force12(input_i(i), input_j(j))
+    f21(i, j) = force21(input_i(i), input_j(j))
+    ftot += f12(i, j) + f21(i, j)
+  }
+}
+[end counting cache misses]
+\end{verbatim}
+
+\noindent the following would be better (higher performing, but ``more complicated and less elegant''):
+
+\begin{verbatim}
+f12, f21 = [n x n matrices stored in a contiguous array]
+input_i, input_j = [contiguous arrays of size n]
+[begin counting cache misses]
+for (int i = 0; i < n; ++i) {
+  for (int j = 0; j < n; ++j) {
+    f12(i, j) = force12(input_i(i), input_j(j))
+  }
+}
+for (int i = 0; i < n; ++i) {
+  for (int j = 0; j < n; ++j) {
+    f21(i, j) = force21(input_i(i), input_j(j))
+  }
+}
+for (int i = 0; i < n; ++i) {
+  for (int j = 0; j < n; ++j) {
+    ftot += f12(i, j) + f21(i, j)
+  }
+}
+[end counting cache misses]
+\end{verbatim}
+
+Let's explore the efficacy of this transformation.  As usual, we'll suppose that we're using the HPCache, but that it only has room for 10000 numbers, and \texttt{n = 10000}.  Your processor (and compiler) have no predictors, prefetchers, or anything fancy - just the HPCache.  You're starting this calculation from a cold-start, i.e. your thread just took over from a memory-intensive virus and you have no useful material in your cache.  
+\begin{enumerate}[a)]
+\item For the first version (all in the same loop), how many cache misses do you expect during the entire calculation if \texttt{f12} and \texttt{f21} are stored in \href{http://en.wikipedia.org/wiki/Row-major_order}{row-major order}?  
+
+Note: To be clear, the type of answer I'm looking for is ``around $\tfrac{14 n^5}{17}$'', with justification and associated calculations, of course.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item For the first version (all in the same loop), how many cache misses do you expect during the entire calculation if \texttt{f12} and \texttt{f21} are stored in column-major order?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item For the second version (fissioned loops), how many cache misses do you expect during the entire calculation if \texttt{f12} and \texttt{f21} are stored in row-major order?  
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item For the second version (fissioned loops), how many cache misses do you expect during the entire calculation if \texttt{f12} and \texttt{f21} are stored in column-major order?  
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\vfill
+
+
+
+
+
+
+
+\eprob{20}{Back to the real world}
+
+Provide short (but sufficient) answers to the following prompts:
+
+\begin{enumerate}[a)]
+\item Explain as you would to a ``non-technical'' friend of yours (who knows essentially nothing about computer architecture) the major components of a computer, how they are related and interact.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Explain as you would to a ``non-technical'' friend of yours (who knows essentially nothing about computer architecture) why people care about counting cache misses.  
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item In a recent technical presentation I saw, someone described how they ran their production research code on several different machines without changing the code at all and achieved flops rates that were from $2\%$ to $10\%$ of peak.  Ignoring differences in operating system, what difference might there be from one computer to the next that would lead to this behavior?  
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item How would you answer a lab-mate who asks you ``What determines how fast my (single-threaded) code goes?''
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Now that you've seen how to use \texttt{PAPI}, if someone were to give you the source code of a random program, what would you do to get a rough idea of how ``highly performing it is?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\vfill
+
+
+
+
+
+
+
+
+
+
+\eprob{5}{Feedback}
+
+\begin{enumerate}[a)]
+\item How much total time did you spend on this assignment?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Of that time, how much total time did you spend ``flailing'' on little annoying things that are not the main point of the assignment?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Did you work with anyone closely on this assignment?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Did you have any ``aha'' moments where something clicked?  If so, on what problems or parts?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Can you give me any feedback on this assignment?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\vskip 1cm
+\total
+
+\end{document}
+
+
+maybe have them do row major storage tiled multiplication early on, like on this one.  measure cache misses versus tile size.
+
+move one of the harder analysis problems to grade into an in-class exercise?
+
+
+for next time
+
+have them predict, using the HPCache, the cache misses per column for a given matrix size.  then, plot it versus measured.  how close are they?  row major for both, it's different from class.
+
+Maybe on the first homework can ask them how closely related the total matrix multiplication runtime is to the number of cache misses.  as in, suppose that each cache miss costs x nanoseconds.  does that model well the execution time?  what is the number of nanoseconds per cache miss?
+
+next time, ask what the cache hit rate is for both flavors?  i actually can't find it.  i tried using the number of reads (2n^3 + n^2) but it didn't work - get more cache misses than that!
+
+
+
+
+
+plot l1 and l2 cache misses on the same graph, they should be the same in the beginning.
+
+problem 1 part f introduces papi but it's needed in part e.
+
+the faster computers fix everything may need more clear wording to say that cache hit rate is constant here, there, etc.
+
+
+
+remember to introduce functors early. 
+
+also, maybe have colors for each flavor of stuff.  that way, people don't see the same error message and think it's the avx version they've been debugging for hours when it's really now the sse version or something.
+
+
+
+
+
+ask what their favorite thing from this is: https://www.thc.org/root/phun/unmaintain.html

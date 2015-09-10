@@ -1,0 +1,407 @@
+
+\usepackage[left=0.8in, right=0.8in, top=0.7in, bottom=1in, includefoot]{geometry}
+\usepackage{fancyhdr}
+\usepackage{array}
+\usepackage{multicol}
+\setlength{\parindent}{0mm}
+\setlength{\parskip}{5pt}
+\usepackage{sectsty}
+\allsectionsfont{\sffamily}
+\setlength{\headheight}{2cm}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{cancel}
+\usepackage{comment}
+\usepackage{hyperref}
+\usepackage{subfig}
+\usepackage{multirow}
+\usepackage{placeins}
+
+% Global definitions
+%
+% boldface letters
+%
+%\newcommand{\boldface}[1]{\mathbf{#1}}   % upright
+\newcommand{\boldface}[1]{\boldsymbol{#1}}  % italic (slanted)
+%
+\newcommand{\bfa}{\boldface{a}}
+\newcommand{\bfb}{\boldface{b}}
+\newcommand{\bfc}{\boldface{c}}
+\newcommand{\bfd}{\boldface{d}}
+\newcommand{\bfe}{\boldface{e}}
+\newcommand{\bff}{\boldface{f}}
+\newcommand{\bfg}{\boldface{g}}
+\newcommand{\bfh}{\boldface{h}}
+\newcommand{\bfi}{\boldface{i}}
+\newcommand{\bfj}{\boldface{j}}
+\newcommand{\bfk}{\boldface{k}}
+\newcommand{\bfl}{\boldface{l}}
+\newcommand{\bfm}{\boldface{m}}
+\newcommand{\bfn}{\boldface{n}}
+\newcommand{\bfo}{\boldface{o}}
+\newcommand{\bfp}{\boldface{p}}
+\newcommand{\bfq}{\boldface{q}}
+\newcommand{\bfr}{\boldface{r}}
+\newcommand{\bfs}{\boldface{s}}
+\newcommand{\bft}{\boldface{t}}
+\newcommand{\bfu}{\boldface{u}}
+\newcommand{\bfv}{\boldface{v}}
+\newcommand{\bfw}{\boldface{w}}
+\newcommand{\bfx}{\boldface{x}}
+\newcommand{\bfy}{\boldface{y}}
+\newcommand{\bfz}{\boldface{z}}
+%
+\newcommand{\bfA}{\boldface{A}}
+\newcommand{\bfB}{\boldface{B}}
+\newcommand{\bfC}{\boldface{C}}
+\newcommand{\bfD}{\boldface{D}}
+\newcommand{\bfE}{\boldface{E}}
+\newcommand{\bfF}{\boldface{F}}
+\newcommand{\bfG}{\boldface{G}}
+\newcommand{\bfH}{\boldface{H}}
+\newcommand{\bfI}{\boldface{I}}
+\newcommand{\bfJ}{\boldface{J}}
+\newcommand{\bfK}{\boldface{K}}
+\newcommand{\bfL}{\boldface{L}}
+\newcommand{\bfM}{\boldface{M}}
+\newcommand{\bfN}{\boldface{N}}
+\newcommand{\bfO}{\boldface{O}}
+\newcommand{\bfP}{\boldface{P}}
+\newcommand{\bfQ}{\boldface{Q}}
+\newcommand{\bfR}{\boldface{R}}
+\newcommand{\bfS}{\boldface{S}}
+\newcommand{\bfT}{\boldface{T}}
+\newcommand{\bfU}{\boldface{U}}
+\newcommand{\bfV}{\boldface{V}}
+\newcommand{\bfW}{\boldface{W}}
+\newcommand{\bfX}{\boldface{X}}
+\newcommand{\bfY}{\boldface{Y}}
+\newcommand{\bfZ}{\boldface{Z}}
+
+\newcommand{\bfFe}{\boldface{F}_{\text{e}}}
+\newcommand{\bfFp}{\boldface{F}_{\text{p}}}
+\newcommand{\bfepse}{\pmb{\varepsilon}_{\text{e}}}
+\newcommand{\bfepsp}{\pmb{\varepsilon}_{\text{p}}}
+\newcommand{\bfeps}{\pmb{\varepsilon}}
+
+%
+% boldface greek symbols
+%
+\newcommand{\bfalpha}{\boldsymbol{\alpha}}
+\newcommand{\bfbeta}{\boldsymbol{\beta}}
+\newcommand{\bfgamma}{\boldsymbol{\gamma}}
+\newcommand{\bfdelta}{\boldsymbol{\delta}}
+\newcommand{\bfepsilon}{\pmb{\varepsilon}}
+\newcommand{\bfzeta}{\boldsymbol{\zeta}}
+\newcommand{\bfeta}{\boldsymbol{\eta}}
+\newcommand{\bftheta}{\boldsymbol{\theta}}
+\newcommand{\bfkappa}{\boldsymbol{\kappa}}
+\newcommand{\bflambda}{\boldsymbol{\lambda}}
+\newcommand{\bfrho}{\boldsymbol{\rho}}
+\newcommand{\bfmu}{\boldsymbol{\mu}}
+\newcommand{\bfnu}{\boldsymbol{\nu}}
+\newcommand{\bfpi}{\boldsymbol{\pi}}
+\newcommand{\bfxi}{\boldsymbol{\xi}}
+\newcommand{\bfsigma}{\boldsymbol{\sigma}}
+\newcommand{\bftau}{\boldsymbol{\tau}}
+\newcommand{\bfphi}{\boldsymbol{\phi}}
+\newcommand{\bfvarphi}{\boldsymbol{\varphi}}
+\newcommand{\bfchi}{\boldsymbol{\chi}}
+\newcommand{\bfomega}{\boldsymbol{\omega}}
+\newcommand{\bfnull}{\boldsymbol{0}}
+%
+\newcommand{\bfGamma}{\boldsymbol{\Gamma}}
+\newcommand{\bfDelta}{\boldsymbol{\Delta}}
+\newcommand{\bfTheta}{\boldsymbol{\Theta}}
+\newcommand{\bfLambda}{\boldsymbol{\Lambda}}
+\newcommand{\bfPi}{\boldsymbol{\Pi}}
+\newcommand{\bfXi}{\boldsymbol{\Xi}}
+\newcommand{\bfSigma}{\boldsymbol{\Sigma}}
+\newcommand{\bfPhi}{\boldsymbol{\Phi}}
+\newcommand{\bfChi}{\boldsymbol{\Chi}}
+\newcommand{\bfOmega}{\boldsymbol{\Omega}}
+\newcommand{\bfnabla}{\boldsymbol{\nabla}}
+\newcommand{\laplace}{\boldsymbol{\Delta}}
+%
+% caligraphic letters
+%
+\newcommand{\calA}{\mathcal{A}}
+\newcommand{\calB}{\mathcal{B}}
+\newcommand{\calC}{\mathcal{C}}
+\newcommand{\calD}{\mathcal{D}}
+\newcommand{\calE}{\mathcal{E}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calG}{\mathcal{G}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calI}{\mathcal{I}}
+\newcommand{\calJ}{\mathcal{J}}
+\newcommand{\calK}{\mathcal{K}}
+\newcommand{\calL}{\mathcal{L}}
+\newcommand{\calM}{\mathcal{M}}
+\newcommand{\calN}{\mathcal{N}}
+\newcommand{\calO}{\mathcal{O}}
+\newcommand{\calP}{\mathcal{P}}
+\newcommand{\calQ}{\mathcal{Q}}
+\newcommand{\calR}{\mathbb{R}}
+\newcommand{\calS}{\mathcal{S}}
+\newcommand{\calT}{\mathcal{T}}
+\newcommand{\calU}{\mathcal{U}}
+\newcommand{\calV}{\mathcal{V}}
+\newcommand{\calW}{\mathcal{W}}
+\newcommand{\calX}{\mathcal{X}}
+\newcommand{\calY}{\mathcal{Y}}
+\newcommand{\calZ}{\mathcal{Z}}
+% .. define more if needed
+%
+% double stroke
+%
+\newcommand{\dsA}{\mathbb{A}}
+\newcommand{\dsB}{\mathbb{B}}
+\newcommand{\dsC}{\mathbb{C}}
+\newcommand{\dsD}{\mathbb{D}}
+\newcommand{\dsE}{\mathbb{E}}
+\newcommand{\dsF}{\mathbb{F}}
+\newcommand{\dsG}{\mathbb{G}}
+\newcommand{\dsH}{\mathbb{H}}
+\newcommand{\dsI}{\mathbb{I}}
+\newcommand{\dsJ}{\mathbb{J}}
+\newcommand{\dsK}{\mathbb{K}}
+\newcommand{\dsL}{\mathbb{L}}
+\newcommand{\dsM}{\mathbb{M}}
+\newcommand{\dsN}{\mathbb{N}}
+\newcommand{\dsO}{\mathbb{O}}
+\newcommand{\dsP}{\mathbb{P}}
+\newcommand{\dsQ}{\mathbb{Q}}
+\newcommand{\dsR}{\mathbb{R}}
+\newcommand{\dsS}{\mathbb{S}}
+\newcommand{\dsT}{\mathbb{T}}
+\newcommand{\dsU}{\mathbb{U}}
+\newcommand{\dsV}{\mathbb{V}}
+\newcommand{\dsW}{\mathbb{W}}
+\newcommand{\dsX}{\mathbb{X}}
+\newcommand{\dsY}{\mathbb{Y}}
+\newcommand{\dsZ}{\mathbb{Z}}
+
+
+
+\newcommand{\vect}[1]{\mathbf{#1}}
+\newcommand{\grvect}[1]{\mbox{\boldmath{$#1$}}}
+\newcommand{\perm}{\mbox{{\Huge $\epsilon$}}}
+\newcommand{\transvect}[1]{\vect{#1}^{\mbox{\footnotesize T}}}
+\newcommand{\invvect}[1]{\vect{#1}^{\mbox{\footnotesize -1}}}
+\newcommand{\partderiv}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\partderivv}[2]{\frac{\partial^2 #1}{\partial #2^2}}
+\newcommand{\totalderiv}[2]{\frac{d #1}{d #2}}
+
+\newcommand{\mg}[1]{{\boldsymbol{#1}}}
+\newcommand{\mf}[1]{{\mathfrak{#1}}}
+\newcommand{\mfb}[1]{{\boldsymbol{\mathfrak{#1}}}}
+\newcommand{\ms}[1]{{\mathscr{#1}}}
+\newcommand{\mb}[1]{{\mathbf{#1}}}
+\newcommand{\mbb}[1]{{\mathbb{#1}}}
+\newcommand{\mbbu}[1]{{\underline{\mathbb{#1}}}\vphantom{#1}}
+\newcommand{\mbu}[1]{{\underline{\mathbf{#1}}}\vphantom{#1}}
+\newcommand{\mgu}[1]{{\underline{\boldsymbol{#1}}}\vphantom{#1}}
+\newcommand{\mr}[1]{{\mathrm{#1}}}
+\newcommand{\msf}[1]{{\mathsf{#1}}}
+\newcommand{\msfb}[1]{{\boldsymbol{\mathsf{#1}}}}
+
+\newcommand{\dotprod}{\stackrel{\scriptscriptstyle \bullet}{}}
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\T}{^{\mathsf{T}}} % x^{T}
+\newcommand{\mT}{^{\mathsf{-T}}} % x^{-T}
+\newcommand{\wass}{\mathsf{wass}}
+\newcommand{\eff}{\mathsf{eff}}
+\newcommand{\me}{^{\mathrm{-1}}} % x^{-1}
+\newcommand{\Rset}{\ensuremath{\mathbb{R}}}
+\newcommand{\Kset}{\ensuremath{K}}
+\newcommand{\bul}{$\bullet\;$}
+%\newcommand{\red}{\mathrm{red}}
+\newcommand{\Fe}{\mathbf{F}_\mathbf{e}}
+\newcommand{\Fp}{\mathbf{F}_\mathbf{p}}
+\def\rel{{\mathrm{rel}}}
+
+%\newcommand{\D}{\displaystyle}
+\newcommand{\abs}{\rule[-1cm]{0cm}{1cm}}
+\newcommand{\babs}{\rule[-1cm]{0cm}{2cm}}
+
+\newlength{\boxwidth}
+\setlength{\boxwidth}{\textwidth}
+\addtolength{\boxwidth}{-1cm}
+
+\newcommand\pl{\partial}
+\def\dd{\;\!\mathrm{d}}
+\def\DD{\;\!\mathrm{D}}
+\def\Lin{\R^{d\times d}} 
+\def\R{I\!R}
+\def\AM{{\mathrm{AM}}}
+
+\def\btheorem{\begin{theorem}}
+\def\etheorem{\end{theorem}}
+\def\blemma{\begin{lemma}}
+\def\elemma{\end{lemma}}
+\def\bproposition{\begin{proposition}}
+\def\eproposition{\end{proposition}}
+\def\bcorollary{\begin{corollary}}
+\def\ecorollary{\end{corollary}}
+\def\bdefinition{\begin{definition}}
+\def\edefinition{\end{definition}}
+\def\bexample{\begin{example}}
+\def\eexample{\end{example}}
+\def\bremark{\begin{remark}}
+\def\eremark{\end{remark}}
+\def\bproblem#1{\medskip \noindent {\bf #1}\sl \\ }
+\def\eproblem{\rm \medskip}
+\newcommand{\bma}{ \left( \ba}
+\newcommand{\ema}{ \ea \right)}
+\newcommand{\set}[2]{\big\{\: #1 \: \big| \: #2 \:\big\} }
+\def\cD{\mathcal{D}}
+\def\cL{\mathcal{L}}
+\def\cG{\mathcal{G}}
+\def\cI{\mathcal{I}}
+\def\cJ{\mathcal{J}}
+\def\ccA{\mathcal{A}}
+\def\rmD{\mathrm{D}}
+\def\bbQ{\mathbb{Q}}
+\def\bbA{\fg{A\!\!\!A}}
+\def\fg{\boldsymbol}
+\def\mdot{\fg{:}}
+\def\vdot{\fg{\cdot}}
+\newcommand{\el}{\mathsf{el}}
+\def\id{{\bfI}}
+\def\eqldef{{\:{\stackrel{\mathrm{def}}{=}}\:}}
+\newcommand{\eps}{\varepsilon}
+\def\ol{\overline}
+\def\wt{\widetilde}
+\def\wh{\widehat}
+\def\ds{\displaystyle}
+\def\ts{\textstyle}
+\def\mtr{^\mathrm{-T}}
+\def\inh{^\mathrm{inh}}
+\DeclareMathOperator{\divv}{div}
+\DeclareMathOperator{\grad}{grad}
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator{\curl}{curl}
+\DeclareMathOperator{\Curl}{Curl}
+%\DeclareMathOperator{\T}{T}
+\DeclareMathOperator{\argmin}{{arg\,min}}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\trace}{tr}
+\DeclareMathOperator{\sign}{sign}
+\DeclareMathOperator{\dev}{dev}
+\DeclareMathOperator{\cof}{cof}
+\DeclareMathOperator{\sym}{sym}
+\DeclareMathOperator{\skews}{skw}
+\def\Felast{\bfF_\mathbf{\!e}}
+\def\Fplast{\bfF_\mathbf{\!p}}
+\def\Cplast{\bfC_\mathbf{\!p}}
+\def\epselast{\bfeps_\mathbf{\!e}}
+\def\epsplast{\bfeps_\mathbf{\!p}}
+\def\GLin{\mbox{{\sf GL}$(d)$}}  %{\R^{d\times d}_*}% invertible matrices
+\def\Lin{\R^{d\times d}}        % all d times d matrices
+\def\reff#1{(\ref{#1})}
+\def\red{{\mathrm{red}}}
+\def\rep{{\mathrm{rep}}}
+\def\cond{{\mathrm{cond}}}
+\newcommand{\kopfcolor}{\color{red}}
+\newcommand{\er}{\hspace*{4cm}}
+\newcommand{\n}{{\rm n}}
+\newcommand{\nn}{{\rm n+1}}
+\newcommand{\PsiS}{\Psi_\mathrm{S}}
+\newcommand{\PsiV}{\Psi_\mathrm{V}}
+\newcommand{\PsiI}{\Psi_\mathrm{I}}
+\newcommand{\cA}{c_\mathrm{A}}
+\newcommand{\cM}{c_\mathrm{M}}
+
+\newcommand{\calAe}{\underset{e=1}{\overset{n_e}{\mathcal{A}}}}
+\newcommand{\Grad}{\text{Grad}}
+\newcommand{\tcr}{\tau_{\text{crit}}}
+\newcommand{\be}{\begin{equation}\nonumber}
+\newcommand{\ee}{\end{equation}}
+\newcommand{\beq}{\begin{eqnarray}}
+\newcommand{\eeq}{\end{eqnarray}}
+\newcommand{\bem}{\begin{multline}}
+\newcommand{\eem}{\end{multline}}
+\newcommand{\ba}{\begin{align}}
+\newcommand{\ea}{\end{align}}
+\newcommand{\bfzero}{{\fg0}}
+
+\renewcommand{\figurename}{Figure}
+\renewcommand{\tablename}{Table}
+
+\newcommand{\fp}[2]{\frac{\partial #1}{\partial #2} }
+\newcommand{\LR}{{\qquad \Leftrightarrow \qquad }}
+\newcounter{problem}
+\newcounter{points}
+
+\newcommand{\head}[3]{
+
+\begin{center}
+\section*{Homework Set \##1 \ifSolutions Solutions \fi}
+assigned: #2\\
+due: #3, 11:00 pm\\
+in your repo at /cs/cs181j/2015/fall/students/your\_user\_name/cs181j \\
+\end{center}
+\hrule
+\vskip 0.1cm
+}
+
+\newcommand{\prob}[1]{\par\vskip 0.5cm \stepcounter{problem}\subsubsection*{Problem \arabic{problem} \ \small (#1 points).}\addtocounter{points}{#1}}
+\newcommand{\total}{
+\begin{flushright}
+\small\par\vskip 0.3cm \textit{total: \arabic{points} points}
+\end{flushright}
+}
+
+\newcommand{\eprob}[2]{\par\vskip 0.5cm \stepcounter{problem}\subsubsection*{Problem \arabic{problem}: #2 \ \small (#1 points).}\addtocounter{points}{#1}}
+
+
+%\endinput
+
+\usepackage{afterpage}
+\usepackage{enumerate}
+
+\begin{document}
+\sffamily
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyfoot[C]{\sffamily \thepage{}}
+\fancyhead[C]{\vskip 0.7cm \sffamily\footnotesize \textbf{cs181j -- High Performance Computing} \hfill \name\\ Fall 2015 \hfill Harvey Mudd College}
+
+% Convenience function used for including a figure
+\newcommand\Figure[3]
+{
+    \begin{figure}[h!]
+        \begin{center}
+    \includegraphics[width=#3 in]{#1}
+    \caption{\label{fig:#1} {#2}}
+    \end{center}
+    \end{figure}
+}
+
+\newcommand\TwoFigure[7]
+{
+    \begin{figure}[h!]
+        \subfloat[#2]{\includegraphics[width=#7 in]{#1}}
+    \hfill
+        \subfloat[#4]{\includegraphics[width=#7 in]{#3}}
+        \caption{\label{fig:#6}#5}
+    \end{figure}
+}
+
+\newcommand\TwoFigureVertical[7]
+{
+    \begin{figure}[h!]
+        \subfloat[#2]{\includegraphics[width=#7 in]{#1}}
+
+        \subfloat[#4]{\includegraphics[width=#7 in]{#3}}
+        \caption{\label{fig:#6}#5}
+    \end{figure}
+}
+
+
+\fancyhead[RL]{}
+
+%\newcommand{\name}{I forgot to change my name}
