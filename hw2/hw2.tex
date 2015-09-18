@@ -1,0 +1,211 @@
+\documentclass[11pt]{article}
+
+% This is a toggle for whether the solutions should be included in output of this document
+\newif\ifSolutions
+%\Solutionsfalse  % this is used to exclude the solutions
+\Solutionstrue  % this is used to include the solutions
+
+\input{../latexDefinitions}
+
+\head{2}{Wednesday, Sept 16, 2015}{Wednesday, Sept 23, 2015}
+
+\eprob{55}{Whatever, Whatever, I do What I want!}
+
+Design, implement, and analyze a problem that illustrates the importance of cache-awareness.  This should be a problem that, as you change a parameter or change an algorithm or do \textit{something} to it, the performance changes measurably because of cache effects (that you can explain).  Don't use an example from class unless you're exploring a direction that we didn't explore in class.
+
+If you're having trouble thinking of an example, pretend that you have a friend who refuses to think about memory and you're trying to teach your friend that s/he should care about caches and memory.  Make an example program to convince them of the necessity of being cache-aware.  Be creative!
+
+Or, consider the type of problem you do in your research. Make a toy program that models (goes through the same fundamental motions as) some core calculation that you do in your own research.  Vary something that controls the amount of data to be processed or how the data is accessed or \textit{something} and observe a ``memory shelf'' behavior in the runtime or flops per cache miss.  
+
+As a reminder, these types of ``open-ended'' problems will be graded based on \textbf{how hard} your chosen example was, how well it \textbf{illustrates the concept}, how \textbf{well executed} the example was, and how correct your \textbf{analysis} is.
+
+You may work on this (pair programming) with a partner if you'd like.  However, your analysis, figures, and data must all be your own.
+
+\begin{enumerate}[a)]
+\item Would you classify your problem as easy (easy problems take little imagination and a relatively lower amount of effort, worth 70\%), standard (average imagination and average effort, worth 85\%), or hard (much imagination and a relatively larger amount of effort, worth 100\%)?  Give a couple-sentence justification - I need to see if I'm on the same page as you are.
+
+\item Describe the problem and present the observed behavior in ways that are clear enough to use as an example in class.  Remember, a good portion of your grade on these problems is presentation.  Pretend that I'm your boss at a company in 5 years and come to you with this question; answer it as you would to your boss.  You will find that pseudocode and plots are quite helpful for people to understand things.
+
+\item Implement the problem and demonstrate your performance improvement with a plot (preferable) or table.
+\end{enumerate}
+
+If you're having trouble thinking of examples, you could do one of the following ideas that my grutors and I came up with.  Note: some of these may be hard and some may not work well; we're just trying to help you think of ideas.
+
+\begin{itemize}
+  \item{If you took cs70 here at Mudd, you could explore the caching behavior of hash tables using linear probing versus quadratic probing (don't do separate chaining, or you'll see the cost of \texttt{malloc}).  You'll have to make sure that your hash table is getting enough collisions to see a difference.}
+  \item{Make the ``memory mountain'' we saw in class by striding through arrays changing the array size and the stride.  \emph{Do not} just run someone else's code or copy theirs; think about how to do it and make it yourself.  You can adapt the visualization script from problem 3 to visualize the mountain.}
+  \item{You could implement the \href{https://en.wikipedia.org/wiki/Strassen_algorithm}{Strassen} algorithm for matrix multiplication and compare number of flops performed or caching behavior with the naive algorithm we did on the last assignment.  If you choose to do this, you can adapt an implementation you find online rather than having to do it all yourself.}
+  \item{You could look at doing \href{https://www.youtube.com/watch?v=7LW_75E3A1Q}{gaussian blur} of images.}
+  \item{You could do operations on 3D arrays (like matrices, but one more dimension).}
+\end{itemize}
+\vfill
+
+\newpage
+
+
+
+
+
+
+\eprob{15}{Interpol-ation}
+
+Interpol (the international criminal police organization) is asking you for some help.  They have a top secret program with the following structure:
+
+\begin{verbatim}
+vector<double> input(N)
+vector<double> resultNumbers(N)
+vector<double> junk(5 megabytes worth);
+for many times
+  [... do some stuff touching all over in input and junk ...]
+
+  for i = 1...N
+    resultNumbers[i] =
+      function(input[i]) + function(input[i]/2.1) + function(input[i]/4.25)
+
+  [... do some more stuff touching all over in input and junk ...]
+\end{verbatim}
+
+Interpol is worried about the amount of time spent evaluating \texttt{function(input[i])}, so they decide to precalculate the values of the function for \texttt{numberOfInterpolationPoints} values of the input and replace the function call with interpolation.
+
+\begin{verbatim}
+vector<double> lookupTable(numberOfInterpolationPoints)
+for i = 1...numberOfInterpolationPoints
+  lookupTable[i] = function(...)
+vector<double> input(N)
+vector<double> resultNumbers(N)
+vector<double> junk(5 megabytes worth);
+for many times
+  [... do some stuff touching all over in input and junk ...]
+
+  for i = 1...N
+    resultNumbers[i] = interpolate from lookupTable for each of the three function calls 
+      instead of calling the actual function
+
+  [... do some more stuff touching all over in input and junk ...]
+\end{verbatim}
+
+The values of \texttt{input[i]} are uniformly distributed through the domain of the \texttt{lookupTable}.
+
+\begin{enumerate}[a)]
+\item For this part, only consider the \texttt{for i = 1...N} loop.  What concerns might you have about this redesign? How is the effect of the redesign dependent on the contents of the \texttt{function}?
+
+\ifSolutions
+
+\textbf{Solution:}
+
+\fi
+
+\item How might this introduction of interpolation affect the time it takes to do the other things the code is doing (not in the \texttt{for i = 1...N} loop)? How is this effect dependent on the \texttt{numberOfInterpolationPoints}?
+
+\ifSolutions
+
+\textbf{Solution:}
+
+\fi
+
+\item Suppose, for some reason, that interpolation is required by bureaucratic overlords or something.  Once again, we'll not care about anything except for the time it takes to do the \texttt{for i = 1...N} loop.  What can you do to improve \textit{cache line utilization} during the loop?
+
+\ifSolutions
+
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+
+
+
+\newpage
+
+
+\eprob{15}{Remember Remember, the Fifth [Power] of November}
+
+In this problem, we'll explore the effect of memoization on a toy problem.  We'll calculate a bunch of inputs, each to an integer power ($x[i]^{17}$, for example).  All input values ($x[i]$) are between $0$ and $1$, we'll always do the same number of inputs (say, $10000$), but some of the inputs will be repeated (that's the \texttt{duplicationRate} stuff in the provided code). When the \texttt{duplicationRate} is $1.00$ every input is the same, when the \texttt{duplicationRate} is $0.00$ every input is unique, and when the \texttt{duplicationRate} is $0.50$ half the inputs are repeated. We'll also vary how much work we do to each input, by calculating it to a higher or lower power (say from $1$ to $20$).
+
+Memoization works best when you know you have a fixed number of possible inputs because you can store the memoized results in an array.  In the general case, you might need a tree (\texttt{std::map} in c++) or a hash map (\texttt{std::unordered\_map}), from which it is much more expensive to retrieve the results.  In this problem, the keys identifying our known results are \texttt{doubles} between 0 and 1.  
+
+We have determined that we don't need the \emph{exact} value of $x[i]^{20}$, if we've computed the power of a value within some small tolerance (say $10^{-7}$) of $x[i]$, we can just use that value.  This means that keys in the \texttt{std::map} are determined to be unique using a toleranced float comparison operator (as shown in \texttt{Main3\_functors.h}).
+
+Unmemoized and \texttt{std::map}-memoized versions are provided in \texttt{Main3\_functors.h} already, as well as a blank array-memoized version.  Your job is to populate the array-memoized version.  You shouldn't need to change anything in \texttt{Main3.cc}.
+
+In an array-memoized version, you'll make a \texttt{std::vector} with space for (\texttt{1 / memoizationResolution + 1} values) in the constructor of the \texttt{ArrayMemoizedVersion} object.  Then, when you are trying to determine if the value for a given \texttt{x} has already been computed, you simply find the array index of that value by dividing \texttt{x} by the \texttt{memoizationResolution} (because all input values are between 0 and 1).  
+
+The \texttt{generatePlots3.py} script will plot the results of the \texttt{Main3} executable, and the solutions already include those images below.  What do you learn from the plots?
+
+\ifSolutions
+
+\textbf{Solution:}
+
+Figures \ref{fig:ArrayAndMapVsUnMemoized} and \ref{fig:SpeedupOfArrayMemoizedOverMapMemoized} are neato.
+
+\begin{figure}[h!]
+    \subfloat[map-memoized vs un-memoized]{\includegraphics[width=3.50 in, trim=1.00in 1.00in 1.00in .70in, clip]{figures/Main3_mapMemoized_vs_unMemoized_shuffler}}
+\hfill
+    \subfloat[map-memoized vs un-memoized]{\includegraphics[width=3.50 in, trim=1.00in 1.00in 1.00in .70in, clip]{figures/Main3_arrayMemoized_vs_unMemoized_shuffler}}
+    \caption{\label{fig:ArrayAndMapVsUnMemoized}Performance versus un-memoized}
+\end{figure}
+
+\begin{figure}[h!]
+    \begin{center}
+\includegraphics[width=4 in, trim=1.00in 1.00in 1.00in .70in, clip]{figures/Main3_arrayMemoized_vs_mapMemoized_shuffler}
+\caption{\label{fig:SpeedupOfArrayMemoizedOverMapMemoized} {Speedup of array-memoized over map-memoized}}
+\end{center}
+\end{figure}
+
+\fi
+
+
+
+
+
+
+\eprob{10}{Back to the Real World}
+
+Provide short (but sufficient) answers to the following prompts:
+
+\begin{enumerate}[a)]
+\item Let's say that your tech-y labmate tells you that trying to be smart about programming is dumb because computers get 60\% faster each year, so it's not worth your time.  How would you respond?  What does change by \textasciitilde60\% per year, and what does that have to do with fast programming?  Note: this question is like the next one, but it's to a technical audience.
+
+\ifSolutions
+
+\textbf{Solution:}
+
+\fi
+
+\item Let's say that a ``non-technical'' friend of yours (who knows essentially nothing about computer architecture) talks to you about the good old days in which computers were twice as fast every other year (throwing out a bunch of arcane-sounding model names that end in 86) and asks you ``So, how about now?  How much faster are computers now than they were in 2000?  I bet they're 100 times faster!!1!''  Note: this is like the previous question, but for a non-technical audience.
+
+\ifSolutions
+
+\textbf{Solution:}
+
+\fi
+
+\item What is the relationship between the memory footprint of a program, the size of the memory on a machine, the program being memory-bound, and its total runtime?
+
+\ifSolutions
+
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\vfill
+
+\eprob{5}{Feedback}
+
+\begin{enumerate}[a)]
+\item How much total time did you spend on this assignment?
+\item Of that time, how much total time did you spend ``flailing'' on little annoying things that are not the main point of the assignment?
+\item Did you work with anyone closely on this assignment?
+\item Did you have any ``aha'' moments where something clicked?  If so, on what problems or parts?
+\item Can you give me any other feedback on this assignment?
+\end{enumerate}
+
+\vskip 1cm
+\total
+
+\end{document}
+
+todo: change the seed of the random number generator to determine student grades at the end.
