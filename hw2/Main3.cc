@@ -67,7 +67,8 @@ template <class Calculator>
 void
 runTimingTest(const unsigned int numberOfTrials,
               const vector<double> & input,
-              Calculator * calculator,
+              const unsigned int power,
+              const double memoizationResolution,
               vector<double> * result,
               double * elapsedTime) {
 
@@ -83,8 +84,11 @@ runTimingTest(const unsigned int numberOfTrials,
     const high_resolution_clock::time_point tic =
       high_resolution_clock::now();
 
+    // Create the calculator, doing any necessary allocation.
+    Calculator calculator(power, memoizationResolution);
+
     // Run the test
-    calculator->computePowers(input, result);
+    calculator.computePowers(input, result);
 
     // Stop timing
     const high_resolution_clock::time_point toc =
@@ -110,21 +114,18 @@ int main() {
   // This is a duplication rate.  When it's 0, then every value of x[i]
   //  will be different.  When it's 0.5, then 50% of the values are repeated.
   //  When it's 1.0, then every input value is the same.
-  //const vector<double> duplicationRates = {{0.000, 0.250, 0.500, 0.750, 0.850,
-  //0.900, 0.925, 0.950, 0.975, 1.000}};
   const vector<double> duplicationRates = {{0.000, 0.330, 0.660, 0.900, 0.950,
                                             0.980, 0.990, 0.995, 1.000}};
   // This is a the range of the power to compute.  When it's 2, we just
   //  calculate x[i]^2 for every input.  When it's 17, we calculate x[i]^17
-  //const vector<double> powers = {{1, 2, 3, 4, 5, 6, 8, 10, 14, 18, 20}};
-  const vector<double> powers = {{1, 2, 3, 5, 10, 15, 20}};
+  const vector<double> powers = {{1, 5, 10, 20, 50, 100, 200}};
   // This is the resolution used to determine if we can used a stored result.
   // That is, if a current query is within this resolution of a stored query,
   //  we use the stored query.
-  const double memoizationResolution = 1e-7;
+  const double memoizationResolution = 1e-5;
   // We do each version this many times and take the minimum runtime, to
   //  smooth curves out.
-  const unsigned int numberOfTrials = 10;
+  const unsigned int numberOfTrials = 5;
 
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   // *************************** </Inputs> *************************************
@@ -135,7 +136,7 @@ int main() {
   // On each test, we need to make sure we get the same result.  A test will
   //  fail if the difference between any entry in our result is more than
   //  absoluteErrorTolerance different than entries we got with another method.
-  const double absoluteErrorTolerance = 1e-4;
+  const double absoluteErrorTolerance = 1e-3;
 
   // Make sure that the data directory exists.
   Utilities::verifyThatDirectoryExists("data");
@@ -203,25 +204,24 @@ int main() {
       vector<double> unMemoizedResult(inputSize,
                                       std::numeric_limits<double>::quiet_NaN());
       double unMemoizedElapsedTime;
-      PowerCalculator unMemoizedCalculator(power);
-      runTimingTest(numberOfTrials,
-                    input,
-                    &unMemoizedCalculator,
-                    &unMemoizedResult,
-                    &unMemoizedElapsedTime);
+      runTimingTest<PowerCalculator>(numberOfTrials,
+                                     input,
+                                     power,
+                                     memoizationResolution,
+                                     &unMemoizedResult,
+                                     &unMemoizedElapsedTime);
       unMemoizedOutputMatrix[duplicationRateIndex][powerIndex] =
         unMemoizedElapsedTime;
 
       vector<double> mapMemoizedResult(inputSize,
                                        std::numeric_limits<double>::quiet_NaN());
       double mapMemoizedElapsedTime;
-      MapMemoizedPowerCalculator mapMemoizedCalculator(power,
-                                                       memoizationResolution);
-      runTimingTest(numberOfTrials,
-                    input,
-                    &mapMemoizedCalculator,
-                    &mapMemoizedResult,
-                    &mapMemoizedElapsedTime);
+      runTimingTest<MapMemoizedPowerCalculator>(numberOfTrials,
+                                                input,
+                                                power,
+                                                memoizationResolution,
+                                                &mapMemoizedResult,
+                                                &mapMemoizedElapsedTime);
       // Check the result
       checkResult(unMemoizedResult,
                   mapMemoizedResult,
@@ -233,13 +233,12 @@ int main() {
       vector<double> arrayMemoizedResult(inputSize,
                                          std::numeric_limits<double>::quiet_NaN());
       double arrayMemoizedElapsedTime;
-      ArrayMemoizedPowerCalculator arrayMemoizedCalculator(power,
-                                                           memoizationResolution);
-      runTimingTest(numberOfTrials,
-                    input,
-                    &arrayMemoizedCalculator,
-                    &arrayMemoizedResult,
-                    &arrayMemoizedElapsedTime);
+      runTimingTest<ArrayMemoizedPowerCalculator>(numberOfTrials,
+                                                  input,
+                                                  power,
+                                                  memoizationResolution,
+                                                  &arrayMemoizedResult,
+                                                  &arrayMemoizedElapsedTime);
       // Check the result
       checkResult(unMemoizedResult,
                   arrayMemoizedResult,
@@ -258,7 +257,7 @@ int main() {
     const high_resolution_clock::time_point toc = high_resolution_clock::now();
     const double thisSizesElapsedTime =
       duration_cast<duration<double> >(toc - thisSizesTic).count();
-    printf("finished duplication rate %4.2f (%2u/%2u) with %3u repeats "
+    printf("finished duplication rate %5.3f (%2u/%2u) with %3u repeats "
            "in %8.2e seconds\n",
            duplicationRate, duplicationRateIndex,
            numberOfDuplicationRateDataPoints,

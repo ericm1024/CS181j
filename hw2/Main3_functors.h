@@ -27,8 +27,10 @@ PowerCalculator {
   const unsigned int _power;
 
   // Constructs a PowerCalculator for exponent power.
-  PowerCalculator(const unsigned int power) :
+  PowerCalculator(const unsigned int power,
+                  const double memoizationResolution) :
     _power(power) {
+    ignoreUnusedVariable(memoizationResolution);
     // Nothing to do here.
   }
 
