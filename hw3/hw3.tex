@@ -43,7 +43,7 @@ end
 
 \begin{enumerate}[a)]
 
-\item Consider a plot of flops per L1 cache miss versus \texttt{matrixSize}, as a function of tile size.  What will the flops per cache miss be like for small tile size (like 16)?  How about large tile sizes (like 128)?  Your prediction doesn't have to be right, but it should demonstrate some understanding of what's going on.  In this class, predictions aren't graded on correctness, you just have to do them and show some thinking.
+\item Consider a plot of flops per L1 cache miss versus \texttt{matrixSize}, as a function of tile size.  What will the flops per cache miss be like for small tile size (like 12)?  How about large tile sizes (like 100)?  Your prediction doesn't have to be right, but it should demonstrate some understanding of what's going on.  In this class, predictions aren't graded on correctness, you just have to do them and show some thinking.
 
 \ifSolutions
 \textbf{Solution:}
@@ -56,7 +56,7 @@ Depending on whether the \texttt{tileSize} evenly divides the \texttt{matrixSize
 
 Making an implementation for general combinations of \texttt{matrixSize} and \texttt{tileSize} requires some thinking.  It can be done by inserting lots of conditionals, but that will hurt your performance.  If you choose to make the general version, minimize the number of conditionals you use. 
 
-Whichever version you choose to implement, the provided post-processing script makes a plot of flops rate versus \texttt{matrixSize} of all of your versions, including lines for tile sizes of \texttt{16, 32, 48, 64, and 128}, and it's automatically included here.  What do you learn from the features of the graph?  Does anything surprise you?
+Whichever version you choose to implement, the provided post-processing script makes a plot of flops rate versus \texttt{matrixSize} of all of your versions, including lines for tile sizes of \texttt{12, 25, 75, and 100}, and it's automatically included here.  What do you learn from the features of the graph?  Does anything surprise you?
 
 \ifSolutions
 \textbf{Solution:}
