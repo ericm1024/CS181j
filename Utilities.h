@@ -77,4 +77,38 @@ writeMatrixToFile(const std::vector<std::vector<double> > & matrix,
 
 }
 
+// some ascii colors
+#define RESET               "\033[0m"
+
+#define BOLD_ON             "\033[1m"
+#define I_ON                "\033[3m"
+#define U_ON                "\033[4m"
+#define INVERSE_ON          "\033[7m"
+#define STRIKETHROUGH_ON    "\033[9m"
+#define BOLD_OFF            "\033[21m"
+#define I_OFF               "\033[23m"
+#define U_OFF               "\033[24m"
+#define INVERSE_OFF         "\033[27m"
+#define STRIKETHROUGH_OFF   "\033[29m"
+
+#define FG_BLACK            "\033[30m"
+#define FG_RED              "\033[31m"
+#define FG_GREEN            "\033[32m"
+#define FG_YELLOW           "\033[33m"
+#define FG_BLUE             "\033[34m"
+#define FG_MAGENTA          "\033[35m"
+#define FG_CYAN             "\033[36m"
+#define FG_WHITE            "\033[37m"
+#define FG_DEFAULT          "\033[39m"
+
+#define BG_BLACK            "\033[40m"
+#define BG_RED              "\033[41m"
+#define BG_GREEN            "\033[42m"
+#define BG_YELLOW           "\033[43m"
+#define BG_BLUE             "\033[44m"
+#define BG_MAGENTA          "\033[45m"
+#define BG_CYAN             "\033[46m"
+#define BG_WHITE            "\033[47m"
+#define BG_DEFAULT          "\033[49m"
+
 #endif // UTILITIES_H
