@@ -335,6 +335,7 @@
 \newcommand{\LR}{{\qquad \Leftrightarrow \qquad }}
 \newcounter{problem}
 \newcounter{points}
+\newcounter{stretchPoints}
 
 \newcommand{\head}[3]{
 
@@ -351,11 +352,13 @@ in your repo at /cs/cs181j/2015/fall/students/your\_user\_name/cs181j \\
 \newcommand{\prob}[1]{\par\vskip 0.5cm \stepcounter{problem}\subsubsection*{Problem \arabic{problem} \ \small (#1 points).}\addtocounter{points}{#1}}
 \newcommand{\total}{
 \begin{flushright}
-\small\par\vskip 0.3cm \textit{total: \arabic{points} points}
+\small\par\vskip 0.3cm \textit{total: \arabic{points} points ({\color{blue}+\arabic{stretchPoints} stretch points})}
 \end{flushright}
 }
 
 \newcommand{\eprob}[2]{\par\vskip 0.5cm \stepcounter{problem}\subsubsection*{Problem \arabic{problem}: #2 \ \small (#1 points).}\addtocounter{points}{#1}}
+
+\newcommand{\estretchprob}[3]{\par\vskip 0.5cm \stepcounter{problem}\subsubsection*{Problem \arabic{problem}: #3 \ \small (#1 points ({\color{blue}+#2 stretch points}) ).}\addtocounter{points}{#1}\addtocounter{stretchPoints}{#2}}
 
 
 %\endinput
