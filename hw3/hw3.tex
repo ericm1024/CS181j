@@ -1,0 +1,345 @@
+\documentclass[11pt]{article}
+
+\usepackage[colorlinks=true]{hyperref}
+
+% This is a toggle for whether the solutions should be included in output of this document
+\newif\ifSolutions
+%\Solutionsfalse  % this is used to exclude the solutions
+\Solutionstrue  % this is used to include the solutions
+
+\input{../latexDefinitions}
+
+\head{3}{Wednesday, Sept 23, 2015}{Wednesday, Sept 30, 2015}
+
+\textbf{Stretch problems:}
+
+This is your first assignment with stretch problems.  The idea of stretch problems is to give people opportunities to explore problems that may interest them without penalizing people who aren't as interested.  All assignments are nominally out of 100 points, and most will have around 80 ``normal'' problem points and might have between 20 and 60 ``stretch'' problem points.  
+
+Though you can get over 100 on an assignment, any points above 100 are devalued to 1/4 point each. For example, if you get 75/80 of the non-stretch points and do no stretch problems you'll get a 75 on the assignment.  If you also do 25 points of stretch problems, you'd get a 100 on the assignment.  If you went crazy and did 53 points of stretch problems, you'd get 100 + 28/4 = 107 on the assignment.
+
+It is not anticipated (or recommended) that people do all of the stretch problems on each assignment.
+
+\estretchprob{50}{10}{Tiled Matrix Multiplication}
+
+On homework 1, you found that the memory layout of matrices greatly impacted cache misses and runtime.  You observed that (for the arbitrary order of nested loops we chose) multiplying a row major matrix (on the left) by a column major matrix (on the right) was better than the other way around.
+
+This is all fine and dandy, but you often can't guarantee that your matrices will always be on the left or right, such as in any compound expression like $\bfA * \bfB * \bfC$.  In this situation, you need to use a data layout for all matrices that would result in low cache misses no matter which side of the operand they're on. In this problem, you'll explore this idea by implementing tiled matrix multiplication, where all matrices are stored in row-major order.
+
+The tiled multiplication algorithm operates on submatrices, as shown in figure \ref{fig:TiledMultiplicationPattern}.  The multiplication \\ \mbox{\texttt{result = left * right}} looks (conceptually) like the following:
+
+\begin{verbatim}
+for resultTileRow = 0...numberOfTilesPerSide
+  for resultTileCol = 0...numberOfTilesPerSide
+    resultTile = resultSubmatrices(resultTileRow, resultTileCol)
+    for tileNumber = 0...numberOfTilesPerSide
+      resultTile += leftSubmatrices(resultTileRow, tileNumber) *
+                    rightSubmatrices(tileNumber, resultTileCol)
+    end
+  end
+end
+\end{verbatim}
+
+\Figure{TiledMultiplicationPattern}{Tiled Multiplication Pattern}{4}
+
+\begin{enumerate}[a)]
+
+\item Consider a plot of flops per L1 cache miss versus \texttt{matrixSize}, as a function of tile size.  What will the flops per cache miss be like for small tile size (like 16)?  How about large tile sizes (like 128)?  Your prediction doesn't have to be right, but it should demonstrate some understanding of what's going on.  In this class, predictions aren't graded on correctness, you just have to do them and show some thinking.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Starting from your own solution to homework 1's problem 2 or from the provided starter code, add functionality to multiply the \texttt{rowMajorLeftMatrix} by the \texttt{rowMajorRightMatrix} using tiled multiplication.  
+  
+Depending on whether the \texttt{tileSize} evenly divides the \texttt{matrixSize}, the details of this algorithm can be tricky.  So, you have a choice: if you make an implementation which multiplies general matrix sizes (the matrix size is not a factor of the tile size) then you get full points (consider it a stretch problem).  If you want a bit of an easier job, you can make an implementation that only works for matrix sizes which are multiple of the tile size without getting the stretch points.  \textbf{If} you choose to make an implementation which isn't general, \textbf{make sure you appropriately set the \texttt{matrixSizeStyle} enum towards the beginning of \texttt{main}} or you'll probably have incorrect answers or segmentation faults even if your implementation is correct.  Note that the executable will round matrix sizes to multiples of the tile size, and some of the plotting will look weird because you might run multiple data points with the same matrix size.
+
+Making an implementation for general combinations of \texttt{matrixSize} and \texttt{tileSize} requires some thinking.  It can be done by inserting lots of conditionals, but that will hurt your performance.  If you choose to make the general version, minimize the number of conditionals you use. 
+
+Whichever version you choose to implement, the provided post-processing script makes a plot of flops rate versus \texttt{matrixSize} of all of your versions, including lines for tile sizes of \texttt{16, 32, 48, 64, and 128}, and it's automatically included here.  What do you learn from the features of the graph?  Does anything surprise you?
+
+\ifSolutions
+\textbf{Solution:}
+
+The requested plot is in figure \ref{fig:FlopsRate}.  
+
+\begin{figure}[h!]
+    \begin{center}
+\includegraphics[width=6 in]{figures/Main1_FlopsRate_shuffler}
+\caption{\label{fig:FlopsRate}{Flops rates for various matrix multiplication versions}}
+\end{center}
+\end{figure}
+
+\fi
+
+\item The post-processing scripts makes a plot of flops per L1 cache miss versus \texttt{matrixSize} for all of your versions. Analyze the number of flops per L1 cache miss that you get from the tiled multiplication version.  Why do you get the numbers you get?  What is the relationship between the flops per L1 cache miss obtained by the new tiled multiplication version and the flops per L1 cache miss obtained by \texttt{rowCol} and \texttt{colRow}.  How is it a function of the tile size?
+
+\ifSolutions
+\textbf{Solution:}
+
+The requested plot is in figure \ref{fig:FlopsPerCacheMiss}.  
+
+\begin{figure}[h!]
+    \begin{center}
+\includegraphics[width=6 in]{figures/Main1_FlopsPerCacheMiss_shuffler}
+\caption{\label{fig:FlopsPerCacheMiss}{Flops per cache miss for various matrix multiplication versions}}
+\end{center}
+\end{figure}
+
+\fi
+
+\item Deep down, why does this tiling technique work?  What is the secret?  Explain to a non-technical person what makes it effective.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item When you change your algorithm or data structures, it is important to be cognizant of any possible changes in your final answer, and whether those changes are significant. Floating point arithmetic is not associative, so $a + (b + c) \neq (a + b) + c$.  In other words, the order in which you add numbers together matters. 
+
+Do you get exactly the same answer (bit for bit) in the result matrix if you do rowMajor times colMajor with naive multiplication as you do if you do colMajor times rowMajor with naive multiplication?  Under what conditions would you get exactly the same answer?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Do you get exactly the same answer (bit for bit) in the result matrix if you do rowMajor times rowMajor with tiled multiplication as you do if you do rowMajor times colMajor with naive multiplication?  Under what conditions would you get exactly the same answer?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+Note: Be careful of your integer operations.  When you're down to your innermost loop doing the submatrix multiplications, you want to be doing as few operations as possible to find the index of the next entry in each matrix.
+
+
+\newpage
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\eprob{15}{Prefetching pointer-based trees}
+
+In class, we talked about prefetching pointer-based data structures.  Suppose you have the following definition of a tree node and a traversal function:
+
+\begin{verbatim}
+struct Node {
+  Node * _left;
+  Node * _right;
+  Stuff _data;
+};
+
+void
+traverse(Node * p) {
+  process(p->_data);
+  traverse(p->_left);
+  traverse(p->_right);
+}
+\end{verbatim}
+
+You and your friend implement the following different versions of \texttt{traverse} that use prefetching.
+
+\begin{verbatim}
+void
+yourTraverse(Node * p) {
+  prefetch(p->_left);
+  prefetch(p->_right);
+  process(p->_data);
+  yourTraverse(p->_left);
+  yourTraverse(p->_right);
+}
+\end{verbatim}
+
+\begin{verbatim}
+void
+yourFriendsTraverse(Node * p) {
+  process(p->_data);
+  Node * temp = p->_left;
+  prefetch(temp->_left);
+  prefetch(temp->_right);
+  yourFriendsTraverse(temp);
+  temp = p->_right;
+  prefetch(temp->_left);
+  prefetch(temp->_right);
+  yourFriendsTraverse(temp);
+}
+\end{verbatim}
+
+Your boss wants to know which one is more effective.  How would you answer her?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\newpage
+
+
+
+
+
+
+
+
+\estretchprob{0}{25}{Prefetching open-ended}
+
+Implement an example (that we haven't done in class) where prefetching creates a measurable improvement in runtime.  Make it very easy to turn on and off prefetching by putting all of your prefetching stuff within \texttt{$\#$ifdef USE\_PREFETCHING ... $\#$endif} blocks.  Of course, it is most interesting if your example performs differently in some measurable way when someone comments out the \texttt{$\#$define USE\_PREFETCHING} line, but you can still get full points if your example doesn't turn out to have a difference in runtime as long as you have a good explanation for why the runtime isn't changed.
+
+
+\begin{verbatim}
+#define USE_PREFETCHING
+int main() {
+  ...
+  for some loop thing or something
+#ifdef USE_PREFETCHING
+    do prefetching magic!
+#endif
+    keep doing your stuff
+\end{verbatim}
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+%\newpage
+
+
+
+
+
+
+
+
+
+
+\estretchprob{0}{10}{Near-Sighted?  Or Far-Sighted?}
+
+Suppose that you are adding numbers stored in a \texttt{vector} with the following algorithm:
+
+\begin{verbatim}
+for each cacheLine in the vector
+  start prefetching the cache line prefetchDistance cache lines ahead
+  add all numbers in this cacheLine to sum
+\end{verbatim}
+
+\noindent A cache miss costs 100ns, the time to add a number in an already-fetched cache line to the \texttt{sum} is 0.5ns, and issuing a prefetch is free.  The cache line size is 16 numbers, you start from a cold cache and the cache can hold 500 cache lines. The processor doesn't support out of order execution and the memory system does not do any hardware prefetching.
+
+Derive and plot the speedup as a function of the \texttt{prefetchDistance}.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+
+
+\eprob{10}{Back to the Real World}
+
+Provide short (but sufficient) answers to the following prompts:
+
+\begin{enumerate}[a)]
+\item How would you explain to a ``non-technical'' friend of yours (who knows essentially nothing about computer architecture) what prefetching is?
+
+\ifSolutions
+
+\textbf{Solution:}
+
+\fi
+
+\item To be quite honest, I don't anticipate you inserting manual prefetching instructions into your programs very often (if at all).  How should your knowledge of prefetching guide the way you design or use data structures?
+
+\ifSolutions
+
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\vfill
+
+
+
+\vfill
+
+\eprob{5}{Feedback}
+
+\begin{enumerate}[a)]
+\item How much total time did you spend on this assignment?
+\item Of the total time, how much total time did you spend ``flailing'' on little annoying things that are not the main point of the assignment?
+\item Of the total time, how much total time did you spend on stretch problems?
+\item Did you work with anyone closely on this assignment?
+\item Did you have any ``aha'' moments where something clicked?  If so, on what problems or parts?
+\item Can you give me any feedback on this assignment?
+\end{enumerate}
+
+\vskip 1cm
+\total
+
+\end{document}
+
+todo: bake a special treat for the next in-class dessert:
+
+1 (18.25-ounce) package chocolate cake mix
+1 can prepared coconut–pecan frosting
+3/4 cup vegetable oil
+4 large eggs
+1 cup semi-sweet chocolate chips
+3/4 cup butter or margarine
+1 2/3 cup granulated sugar
+2 cups all-purpose flour
+
+Don't forget garnishes such as:
+Fish-shaped crackers
+Fish-shaped candies
+Fish-shaped solid waste
+Fish-shaped dirt
+Fish-shaped ethylbenzene
+Pull-and-peel licorice
+Fish-shaped volatile organic compounds and sediment-shaped sediment
+Candy-coated peanut butter pieces (shaped like fish)
+1 cup lemon juice
+Alpha resins
+Unsaturated polyester resin
+Fiberglass surface resins and volatile malted milk impoundments
+9 large egg yolks
+12 medium geosynthetic membranes
+1 cup granulated sugar
+An entry called: "How to Kill Someone with Your Bare Hands"
+2 cups rhubarb, sliced
+2/3 cups granulated rhubarb
+1 tbsp. all-purpose rhubarb
+1 tsp. grated orange rhubarb
+3 tbsp. rhubarb, on fire
+1 large rhubarb
+1 cross borehole electromagnetic imaging rhubarb
+2 tbsp. rhubarb juice
+Adjustable aluminum head positioner
+Slaughter electric needle injector
+Cordless electric needle injector
+Injector needle driver
+Injector needle gun
+Cranial caps
+And it contains proven preservatives, deep-penetration agents, and gas- and odor-control chemicals that will deodorize and preserve putrid tissue.
