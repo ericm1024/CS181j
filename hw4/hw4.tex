@@ -1,0 +1,288 @@
+\documentclass[11pt]{article}
+
+\usepackage[colorlinks=true]{hyperref}
+
+% This is a toggle for whether the solutions should be included in output of this document
+\newif\ifSolutions
+%\Solutionsfalse  % this is used to exclude the solutions
+\Solutionstrue  % this is used to include the solutions
+
+\input{../latexDefinitions}
+
+\head{4}{Wednesday, Sept 30, 2015}{Wednesday, Oct 7, 2015}
+
+\eprob{40}{What's the Point?}
+
+The very first decision made in any code that involves Euclidean points (like, you know, the \texttt{x y z} kind) is how to represent those points.  Assuming that these points will be properties of some \texttt{Object}, the next most basic question is how those \texttt{Object}s will be stored. We will explore the performance ramifications of several ways of storing compile-time-sized Euclidean points, summarized in the following table.
+
+\begin{center}
+\begin{tabular}{ | l | l | }
+  \hline
+  \textbf{Our name} & \textbf{Underlying data} \\
+  \hline
+  \texttt{StaticPoint} & \texttt{std::array<double, 3>} \\
+  \hline
+  \texttt{DynamicPoint} & \texttt{std::vector<double>} \\
+  \hline
+  \texttt{ArrayOfPointersPoint} & \texttt{std::array<double*, 3>} \\
+  \hline
+  \texttt{VectorOfPointersPoint} & \texttt{std::vector<double*>} \\
+  \hline
+  \texttt{ListPoint} & \texttt{std::list<double>} \\
+  \hline
+\end{tabular}
+\end{center}
+
+These different \texttt{Point} flavors will be used to store the positions of an \texttt{Object} that has a position, a weight, and some other ignored junk to make them feel like real objects one might use in actual code.
+
+We will consider the 10 possibilities of [\texttt{StaticObject}, \texttt{DynamicObject}, \texttt{ArrayOfPointersObject}, \\ \texttt{VectorOfPointersObject}, and \texttt{ListObject}] stored in a [\texttt{std::vector} or \texttt{std::set}].  Spoiler alert: the fastest of these combinations will be a \texttt{std::vector<StaticObject>}.  
+
+All of the containers are tested using the same templated function, \texttt{calculateNeighborhoodLocality} of the \texttt{LocalityCalculator} class, which is already in place for you.  The function implements the ``container locality error'' measure (described in class) by computing the difference between each \texttt{Object}'s location and the centroid of its neighbors (in the container). The following algorithm shows how to calculate the this ``neighborhood locality error'' of object \texttt{objectIndex} using \texttt{n} neighbors:
+
+\begin{verbatim}
+Point localCentroid(0, 0, 0)
+for (int j = objectIndex - n; j < objectIndex + n + 1; ++j)
+  localCentroid = localCentroid + container[j]._position * container[j]._weight;
+localCentroid = localCentroid / (2 * n + 1);
+thisObjectsNeighborhoodLocality = 
+  magnitude(localCentroid - container[objectIndex]._position);
+\end{verbatim}
+
+Because this algorithm uses neighbors \textit{in the container} for a fixed number of objects to each side of the object, the container boundaries can be tricky.  So, we forget about them - we start on object \texttt{numberOfNeighbors} and don't do the last \texttt{numberOfNeighbors} objects in the container.
+
+You will explore the performance of these different points and containers as a function of the \texttt{numberOfNeighbors}, and you'll measure and plot the performance of flavors relative to the time for \texttt{vector<StaticObject>} (i.e. how many times slower they are).
+
+\begin{enumerate}[a)]
+
+\item Complete the definitions of the \texttt{DynamicPoint}, \texttt{ArrayOfPointersPoint}, \texttt{VectorOfPointersPoint}, and \texttt{ListPoint} objects in \texttt{CommonDefinitions.h} file, which right now just need some functions filled in - you shouldn't have to add any members or member functions to the points.  Note, however, that you shouldn't be using any more calls to \texttt{malloc} than absolutely necessary for each point style.  
+
+The beginning of \texttt{Main1.cc} has a quick sanity check on the point types, but nothing extensive. For this part, you should just be filling out the TODOs in \texttt{CommonDefinitions.h} to flesh out the points.  Once you're done implementing those, explain here what a \texttt{vector<StaticPoint>}, a \texttt{vector<DynamicPoint>}, a \texttt{vector<ArrayOfPointersPoint>}, a \texttt{vector<VectorOfPointersPoint>}, and a \texttt{vector<ListPoint>} look like on the stack and heap.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item How many \texttt{mallocs} are required to create the temporary variable from the addition of two points for the point types other than \texttt{StaticPoint}?
+
+\ifSolutions
+\textbf{Solution:}
+
+\begin{enumerate}
+\item{\texttt{DynamicPoint}:}
+\item{\texttt{ArrayOfPointersPoint}:}
+\item{\texttt{VectorOfPointersPoint}:}
+\item{\texttt{ListPoint}:}
+\end{enumerate}
+
+\fi
+
+\item We'll soon see how poorly the non-\texttt{StaticObject} versions perform, but for now let's suppose that bureaucratic overlords require you to use a \texttt{set<VectorOfPointersObject>}.  Right now the contents of the function \texttt{calculateNeighborhoodLocality} within the \texttt{ImprovedLocalityCalulator} class are identical to those of \texttt{LocalityCalculator} class.  Using your cleverness, change the contents of the \texttt{calculateNeighborhoodLocality} member function of the \texttt{ImprovedLocalityCalculator} class to reduce the runtime as much as you possibly can.  You should only have to make changes to \texttt{Main1\_functors.h}.  What did you change to make it better?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Now, let's see how everything performs.  The python script plots the slowdown with respect to a \\ \texttt{vector<StaticObject>} of all methods, and the plots are included here.  The same information is plotted twice, once on a log scale and once on a linear scale, because sometimes log plots don't quite do justice to the numbers.  Comment on the following points:
+
+\begin{enumerate}[1)]
+\item{The relative performance of \texttt{set}- and \texttt{vector}-based flavors for the same Point type}
+\item{The relative performance of the non-\texttt{StaticObject} flavors, and how it relates to the number of \texttt{mallocs} each performs (i.e. compare \texttt{ListObject} vs \texttt{VectorOfPointersObject} vs \\ \texttt{ArrayOfPointersObject} vs \texttt{DynamicObject})}
+\item{The slowdown of using a \texttt{set<StaticObject>} - what causes the slowdown?}
+\item{Comment on anything else you learn from this plot, or anything that surprises you}
+\end{enumerate}
+
+\ifSolutions
+\textbf{Solution:}
+
+{
+  \begin{figure}[ht]
+    \centering
+
+    \subfloat[Log scale]{\includegraphics[width=7 in]{figures/2d_slowdownSummary_log_shuffler}}
+
+    \subfloat[Linear scale]{\includegraphics[width=7 in]{figures/2d_slowdownSummary_linear_shuffler}}
+
+    \caption{\label{fig:Slowdown} Slowdowns by using different \texttt{Point} classes within a \texttt{vector} and \texttt{set}, as well as the improved version}
+  \end{figure}
+}
+
+\begin{enumerate}[1)]
+\item{}
+\item{}
+\item{}
+\item{}
+\end{enumerate}
+
+\fi
+
+\item If you were to do this problem in Python, two possible ``building block'' data structures might be a \href{https://docs.python.org/2/faq/design.html#how-are-lists-implemented}{list} or a \href{http://docs.scipy.org/doc/numpy/reference/internals.html}{numpy array}.  What's the closest equivalent of a python list in c/c++?  What's the closest equivalent of a \texttt{numpy array} in c/c++?  Do any of the examples we used in this problem seem similar to either of these python choices?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item The objects in the container will be randomly distributed in Euclidean space.  That is, the position of object $i$ will have no correlation with the positions of the objects around it in the container ($i-1$, $i+3$, etc.).  Alternatively, we could sort the particles in their containers by something like the Morton index, or by coordinate.  How would this impact the runtime of the program?  How would this impact other results within the program?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\afterpage{\clearpage}
+\newpage
+
+
+
+
+
+
+
+
+
+\eprob{20}{Mallocounting}
+
+Calls to \texttt{malloc} and copy constructors are very subtle ways that programs can suffer crippling performance issues, and we'll explore them in this problem.  I'll give you some code snippets, you will predict how many times copy constructors or \texttt{malloc} is called, and you'll compare against actual measurements.  Note that in your answers here you don't have to make any derivations; if you program an expression and it works, we're happy.  You should only have to fill in the predicted values at the TODOs in \texttt{Main2.cc}.
+
+\begin{enumerate}[a)]
+
+\item Suppose you are populating a vector of objects for a fixed \texttt{numberOfObjects}.  As a function of the \texttt{numberOfObjects}, how many times does the copy constructor get called for this?
+
+\begin{verbatim}
+std::vector<Object> objects;
+for (unsigned int i = 0; i < numberOfObjects; ++i) {
+  objects.push_back(Object());
+}
+\end{verbatim}
+
+Put your prediction into the code of \texttt{Main3.cc} and fix it until it matches for all values of \texttt{numberOfObjects} in the range of $2$ to $17$.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Now, predict how many times malloc will be called for the same piece of code from part a as a function of the \texttt{numberOfObjects}, put your prediction into \texttt{Main3.cc}, and fix it until it matches.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Now, we'll make it a bit more interesting: we'll make the Object being copied use \texttt{malloc}.  Predict how many times \texttt{malloc} will be called for the following piece of code as a function of the \texttt{initialNumberOfVectors}, put your prediction into \texttt{Main3.cc}, and fix it until it matches.
+
+\begin{verbatim}
+vector<std::vector<double> > vectors(initialNumberOfVectors);
+for (unsigned int i = 0; i < initialNumberOfVectors; ++i) {
+  vectors[i].push_back(i);
+  vectors[i].push_back(i);
+  vectors[i].push_back(i);
+  vectors[i].push_back(i);
+}
+vectors.reserve(initialNumberOfVectors + 1);
+\end{verbatim}
+
+Note: the ``inner'' vector type will actually be a \texttt{WrappedVector}, which you can treat exactly like a normal \texttt{std::vector} - just pretend it is one.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Now, the fun part.  Predict how many times \texttt{malloc} will be called for the following piece of code as a function of the \texttt{numberOfOuterLoops} and the \texttt{numberOfInnerLoops}, put your prediction into \texttt{Main3.cc}, and fix it until it matches.
+
+\begin{verbatim}
+std::vector<std::vector<double> > outerVectorOfVectors;
+for (unsigned int outerLoopIndex = 0;
+     outerLoopIndex < numberOfOuterLoops; ++outerLoopIndex) {
+  std::vector<double> innerVector;
+  for (unsigned int innerLoopIndex = 0;
+       innerLoopIndex < numberOfInnerLoops; ++innerLoopIndex) {
+    innerVector.push_back(0);
+  }
+  outerVectorOfVectors.push_back(innerVector);
+}
+\end{verbatim}
+
+Note: as before, the ``inner'' vector type will actually be a \texttt{WrappedVector}, which you can treat exactly like a normal \texttt{std::vector} - just pretend it is one.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+
+\newpage
+
+
+{
+  \begin{figure}[h!]
+    \centering
+    \includegraphics[width=4 in]{ImplementationsWanted}
+  \end{figure}
+}
+
+\estretchprob{0}{50}{No longer stranded at C}
+
+I, as well as almost all sane people in the world, do not want to have to think about memory and allocation and goobery c details, so give me some hope here.  In \texttt{Main3.cc}, you'll find a simple-ish usage of \texttt{StaticPoints}.  Implement this exact same program in another language such as Python, Java, Rust, Julia or Javascript and measure the performance.  A ``point'' in the other language must be a self-contained object and you must operate on them with operators like \texttt{Point c = a + 2.1*b}.  Measure the absolute runtime in the same way, for the same sizes, and compare the new implementation to the output of \texttt{Main3.cc}.  As long as your program gets the same answer and you report timings, you'll get 25 points regardless of whether your program beat \texttt{Main3.cc}.  If your program beats the speed of \texttt{Main3.cc} by a measurable and repeatable margin, you'll get 50 points.
+
+
+
+
+
+
+\eprob{15}{Back to the Real World}
+
+\begin{enumerate}[a)]
+\item Explain as you would to a ``non-technical'' friend of yours (who knows essentially nothing about operating systems) the difference between using dynamically-sized points and fixed-sized points.  
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Linus Torvalds, the principal force behind the development of the Linux kernel and the git source control system, said the following: ``\textit{git actually has a simple design, with stable and reasonably well-documented data structures. In fact, I'm a huge proponent of designing your code around the data, rather than the other way around, and I think it's one of the reasons git has been fairly successful [...] I will, in fact, claim that \textbf{the difference between a bad programmer and a good one is whether he [or she] considers [their] code or [their] data structures more important}.}''  What do you think he meant by that last part?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Facebook made its own version of the \texttt{std::vector}, described \href{https://github.com/facebook/folly/blob/master/folly/docs/FBVector.md}{here}.  Explain to a non-technical person how the Facebook vector is different than \texttt{std::vector} and in what types of situations it works better.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+
+
+
+
+
+\eprob{5}{Feedback}
+
+\begin{enumerate}[a)]
+\item How much total time did you spend on this assignment?
+\item Of the total time, how much total time did you spend ``flailing'' on little annoying things that are not the main point of the assignment?
+\item Of the total time, how much total time did you spend on stretch problems?
+\item Did you work with anyone closely on this assignment?
+\item Did you have any ``aha'' moments where something clicked?  If so, on what problems or parts?
+\item Can you give me any feedback on this assignment?
+\end{enumerate}
+
+
+\vskip 1cm
+\total
+
+\end{document}
+
+todo: find more ways to make students implement matrix multiplication.

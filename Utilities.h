@@ -4,6 +4,9 @@
 
 #include <string>
 #include <vector>
+#include <fstream>
+#include <cmath>
+#include <algorithm>
 
 // This is a little utility function that can be used to suppress any
 //  compiler warnings about unused variables.
@@ -45,6 +48,16 @@ interpolateNumberLinearlyOnLogScale(const size_t lower,
   const double power = std::log10(lower) +
     percent * (std::log10(upper) - std::log10(lower));
   return std::pow(10., power);
+}
+
+size_t
+interpolateNumberLinearlyOnLinearScale(const size_t lower,
+                                       const size_t upper,
+                                       const unsigned int numberOfPoints,
+                                       const unsigned int pointIndex) {
+  const double percent =
+    pointIndex / double(numberOfPoints - 1);
+  return lower + percent * (upper - lower);
 }
 
 void
