@@ -1,0 +1,322 @@
+\documentclass[11pt]{article}
+
+\usepackage[colorlinks=true]{hyperref}
+
+% This is a toggle for whether the solutions should be included in output of this document
+\newif\ifSolutions
+%\Solutionsfalse  % this is used to exclude the solutions
+\Solutionstrue  % this is used to include the solutions
+
+\input{../latexDefinitions}
+
+\head{5}{Wednesday, Oct 7, 2015}{Wednesday, Oct 14, 2015}
+
+Vectorization is an important way in which computers are increasing their throughput. Many people, including almost all sane ones, want the compiler to do their vectorization for them. The purpose of this assignment is for you to learn how to write your own vectorized code using \textbf{intrinsics} as well as to learn to convince the compiler (specifically, its \textbf{autovectorizer}) to do it for you.  Lastly, when the autovectorizer refuses to do something, we'll try to convince \textbf{openmp} to convince the autovectorizer to do it for you.  
+
+You're going to vectorize several problems on this assignment.  In each problem, I have provided the serial versions of each algorithm as well as all the testing logic, timing, and figure-making scaffolding; you should only have to insert code in the \texttt{TODOs}.
+
+Problem 1 involves some simple \textbf{calculations over vectors}, problem 2 is vectorizing a \textbf{scalar integrator} (like, the calculus-1-Riemann-sum style), and problem 3 is vectorizing the calculation of \textbf{Euclidean distances} within a machine learning technique called \href{https://en.wikipedia.org/wiki/K-means_clustering}{k-means clustering}.  By the way, pink text is clickable, and you should click it.
+
+\begin{itemize}
+  \item It may not be possible to convince the autovectorizer or the openmp library to vectorize all of these problems - that's part of the \textit{fun}.  It's very important for you to go through the process of trying to convince it, figuring out what type of things they can and can't vectorize, giving up and cursing at them.  The solutions will not have successful autovectorized or openmp versions for some of the problems below.  If you are able to autovectorize something that I couldn't, you'll get super neato awesome points.  If you aren't able to autovectorize something that I couldn't, you don't get marked off. It's kind of a bummer not knowing if you should keep pushing the autovectorizer, but unfortunately that's part of the game.  Yay for compilers!
+
+  \item Information on SSE intrinsics can be found \href{https://software.intel.com/sites/landingpage/IntrinsicsGuide}{here}. Information on autovectorization can be found \href{https://gcc.gnu.org/projects/tree-ssa/vectorization.html}{here}, \href{http://www.slideshare.net/linaroorg/using-gcc-autovectorizer}{here}, and \href{http://locklessinc.com/articles/vectorize/}{here}. Information on trying to get the autovectorizer to tell you what it's thinking can be found \href{https://gcc.gnu.org/onlinedocs/gcc/Debugging-Options.html}{here}, if you search for ``vectorizer''.  I already have set up the Makefiles to output information about autovectorization into \texttt{autovectorization.out.MainX}.
+
+  \item Information on using openmp to vectorize loops can be found \href{http://www.openmp.org/mp-documents/OpenMP4.0.0.pdf}{here}, starting on page 68 or \href{http://moodle.rrze.uni-erlangen.de/moodle/pluginfile.php/10607/mod\_resource/content/1/02%20OpenMP%20in%20a%20Nutshell.pdf}{here}, starting on slide 10.  Also, \href{https://software.intel.com/en-us/videos/performance-essentials-4-openmp-4-vectorization-omp-simd}{this video series} about openmp is good, even though some of the features they describe are not available in GCC.
+  
+  \item \texttt{shuffler's} architecture was one of the first architectures with \texttt{AVX}.  In typical fashion, the first architectures which support the new specification aren't quite complete - all instructions run but some instructions will serialize into two \texttt{SSE} calls.  In particular, the \texttt{AVX} division and \texttt{sqrt} instructions turn into two \texttt{SSE} calls on \texttt{shuffler}.  As such, where you still close enough to the same answer to not trigger the correctness checks, try using the reciprocal instructions (\texttt{\_mm\_rcp\_ps} and \texttt{\_mm256\_rcp\_ps}) instead of division for full speedup.
+
+  \item The problems will ask you to implement a ``manual'' version and a ``compiler'' version.  For the manual version you can do either \texttt{sse} or \texttt{avx}, and for the compiler version, you can do either \texttt{auto} or \texttt{omp}.  
+\end{itemize}
+
+\estretchprob{45}{10}{Vectorizing machine}
+
+In this problem, we'll vectorize some simple calculations over arrays.
+
+\begin{enumerate}[a)]
+\item \texttt{sdot} is a level-1 \href{https://en.wikipedia.org/wiki/Basic_Linear_Algebra_Subprograms}{BLAS} function which computes the dot product of two (single-precision) vectors.  Implement the following versions of the \texttt{computeSdot} function in \texttt{Main1\_functions\_sdot.h}:
+\begin{itemize}
+  \item Implement a \texttt{manual} version.
+  \item Implement a \texttt{compiler} version.
+  \item (\textit{stretch, 5 points}) \href{http://en.wikipedia.org/wiki/SSE4}{SSE version 4} (termed ``HD Boost'' by Intel's marketing, \textit{*eyeroll*}) introduced \href{http://msdn.microsoft.com/en-us/library/bb514054.aspx}{dot product instructions}.  Implement a manual version which uses either the \texttt{sse} dot product instructions.  Note that we have not talked about masks, so if this is too icky for you, feel free to skip it; I'm trying to give you a flavor for what it's like to try to use random vector instructions in the wild.
+  \item (\textit{stretch, 5 points}) Now that we're doing our flops faster, we may be even more worried about memory access and keeping the cruncher fed.  Read about the \texttt{\_mm\_prefetch} instruction (perhaps \href{http://lwn.net/Articles/255364/}{here}, which is an excerpt from the highly-recommended Ulrich Drepper's ``What every programmer should know about memory'') and find an appropriate prefetch distance to make a prefetched \texttt{SSE} version.
+\end{itemize}
+The python script will plot the speedup of all flavors, and the graph is included here.  Comment on your results.
+
+\ifSolutions
+\textbf{Solution:}
+
+{
+  \begin{center}
+  \includegraphics[width=7 in]{figures/Main1_sdot_shuffler}
+  \end{center}
+}
+
+\fi
+
+\item Implement the following versions of the \texttt{computeFixedPolynomial} function (which calculates a fixed polynomial $y[i] = c_0 + c_1x + c_2x^2 + c_3x^3$) in \texttt{Main1\_functions\_fixedPolynomial.h}:
+\begin{itemize}
+  \item Implement a \texttt{manual} version.
+  \item Implement a \texttt{compiler} version.
+\end{itemize}
+Plot the speedups that you achieve as a function of vector size for all flavors of \texttt{computeFixedPolynomial} that you implemented.  Comment on your results.
+
+\ifSolutions
+\textbf{Solution:}
+
+{
+  \begin{center}
+  \includegraphics[width=7 in]{figures/Main1_fixedPolynomial_shuffler}
+  \end{center}
+}
+
+\fi
+
+\item Spot the bug!  How does the following code lead to a segmentation fault?
+\begin{verbatim}
+for (index = 0; index < x.size() - 100; index+=8) {
+   simdVector = _mm256_load_ps(&x[index + 96])
+}
+\end{verbatim}
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item In many numerical techniques such as finite difference, you have to do operations on arrays of the same size, but with offset indices.  We'll use the following loop to model this type of computation:
+\begin{verbatim}
+  for (unsigned int i = 0; i < size; ++i)
+    w[i] = a * x[i] * y[(i + 16)%size] / (b * z[(i + size - 8)%size]);
+\end{verbatim}
+Assume that \texttt{size} $> 16$ and \texttt{z[i]} $> 0$. Implement the following versions of the \texttt{computeOffsets} function in \texttt{Main1\_functions\_offsets.h}:
+\begin{itemize}
+  \item First, mods are expensive, so re-implement this algorithm in the \texttt{scalarNoMod} flavor such that use of mods is minimized.  Minimize or eliminate your use of mods in all following versions.
+  \item Implement a \texttt{manual} version.
+  \item Implement a \texttt{compiler} version.
+\end{itemize}
+Plot the speedups that you achieve as a function of vector size and comment on your results.
+
+\ifSolutions
+\textbf{Solution:}
+
+{
+  \begin{center}
+  \includegraphics[width=7 in]{figures/Main1_offsets_shuffler}
+  \end{center}
+}
+
+\fi
+
+\item Implement the following versions of the \texttt{computeTaylorExponential} function (which calculates \texttt{exp} using a Taylor series, like from homework 0) in \texttt{Main1\_functions\_taylorExponential.h}:
+\begin{itemize}
+  \item Implement a \texttt{manual} version.
+  \item Implement a \texttt{compiler} version.
+\end{itemize}
+Plot the speedups that you achieve as a function of vector size and comment on your results.
+
+\ifSolutions
+\textbf{Solution:}
+
+{
+  \begin{center}
+  \includegraphics[width=7 in]{figures/Main1_taylorExponential_shuffler}
+  \end{center}
+}
+
+\fi
+
+\item Overall, what do you observe about the performance you found?  What surprises you?  What makes sense?  What types of things could be auto- or omp-vectorized?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\vfill
+
+\afterpage{\clearpage}
+
+
+
+
+
+
+
+
+
+
+\eprob{15}{Crossing Vectors with Scalar (integration)}
+
+In this problem, we'll vectorize scalar integration, which does calculations without memory accesses.
+
+\begin{enumerate}[a)]
+\item Implement the following versions of the \texttt{integrateSqrt} function in \texttt{Main2\_functions\_sqrt.h}:
+\begin{itemize}
+  \item Implement a \texttt{manual} version.
+  \item Implement a \texttt{compiler} version.
+\end{itemize}
+Plot the speedups that you achieve as a function of vector size and comment on your results.
+
+\ifSolutions
+\textbf{Solution:}
+
+{
+  \begin{center}
+  \includegraphics[width=7 in]{figures/Main2_sqrt_shuffler}
+  \end{center}
+}
+
+\fi
+
+\item Implement the following versions of the \texttt{integrateFixedPolynomial} function in \\ \texttt{Main2\_functions\_fixedPolynomial.h}:
+\begin{itemize}
+  \item Implement a \texttt{manual} version.
+  \item Implement a \texttt{compiler} version.
+\end{itemize}
+Plot the speedups that you achieve as a function of vector size and comment on your results.
+
+\ifSolutions
+\textbf{Solution:}
+
+{
+  \begin{center}
+  \includegraphics[width=7 in]{figures/Main2_fixedPolynomial_shuffler}
+  \end{center}
+}
+
+\fi
+\end{enumerate}
+
+\afterpage{\clearpage}
+\newpage
+
+
+
+
+
+
+
+
+\eprob{20}{k-means Clustering (and D means Done)}
+
+{
+  \begin{figure}[ht]
+    \subfloat[Step 1]{\includegraphics[width=1.5 in]{KMeansExample_Step1}}
+    \hfill
+    \subfloat[Step 2]{\includegraphics[width=1.5 in]{KMeansExample_Step2}}
+    \hfill
+    \subfloat[Step 3]{\includegraphics[width=1.5 in]{KMeansExample_Step3}}
+    \hfill
+    \subfloat[Step 4]{\includegraphics[width=1.5 in]{KMeansExample_Step4}}
+    \caption{\label{fig:KMeansClustering} Steps for performing k-means clustering.  Steps 2-4 are repeated until convergence (or a maximum number of iterations is performed)}
+  \end{figure}
+}
+
+\href{https://en.wikipedia.org/wiki/K-means_clustering}{k-means clustering} is an algorithm that we will revisit a couple more times in the semester after this because the algorithm is straight-forward and lends itself well to various strategies for reducing runtime.  The steps are summarized in figure \ref{fig:KMeansClustering} and are outlined below:
+
+\begin{verbatim}
+initialize centroids to random positions
+
+for each iteration
+  zero out nextCentroids
+  zero out nextCentroidCounts
+  for each point
+    indexOfClosestCentroid = determine index of closest centroid
+    nextCentroids[indexOfClosestCentroid] += point
+    ++nextCentroidCounts[indexOfClosestCentroid]
+
+  for i from 0 to numberOfCentroids
+    centroids[i] = nextCentroids[i] / nextCentroidCounts[i]
+    nextCentroids[i] = zero
+    nextCentroidCounts[i] = 0
+\end{verbatim}
+
+We'll explore a range of number of points (say from 1,000 to 100,000) as well as a range of number of centroids (say from 5 to 200).  The specific calculation to be vectorized will be finding the nearest centroid for a given point, which means 5 to 200 (squared) distance calculations and comparisons.  In order to make these calculations easily vectorizable, the centroids locations are stored in ``structure of arrays'' format.
+
+\texttt{Main0.cc} has an example of finding the index of the minimum value in a vector, and you should essentially copy and paste helpful pieces of that example to use here.  Instead of trying to find the index of the minimum value in a vector, here you're trying to find the index of the minimum value of numbers you calculate.
+
+Vectorize the k-means calculation and include here the plot of the speedup versus the number of points and number of centroids.  Comment on your results.
+
+\ifSolutions
+
+\textbf{Solution:}
+
+{
+  \begin{center}
+  \includegraphics[width=5 in]{figures/KMeans_speedup_shuffler}
+  \end{center}
+}
+
+
+\fi
+
+\vfill
+
+
+
+\estretchprob{0}{20}{Foggy Vector Libraries}
+
+Vectorization is great and all, but there are some things that you can't do with intrinsics or autovectorization, such as \texttt{exp}, \texttt{sin}, \texttt{pow}, and friends.  There are several vector math libraries that provide this type of functionality (and, conveniently, abstract away all of the nasty \_mm547 nonsense!); the one I want you to explore here is Agner Fog's \href{http://www.agner.org/optimize/vectorclass.pdf}{Vector Class Library}.  Choose an interesting function that you can't compute using intrinsics, calculate it for many inputs using Agner's vector class and with the normal scalar function, and plot your speedup versus vector size.
+
+\vfill
+
+
+
+
+\eprob{15}{Back to the Real World}
+
+Provide short (but sufficient) answers to the following prompts:
+
+\begin{enumerate}[a)]
+\item Explain as you would to a ``non-technical'' friend of yours (who knows essentially nothing about computer architecture) the difference between using scalar registers and vector registers.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item How would you answer a lab-mate who asks you ``how do I vectorize my code?''
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item There are few things that people like to stick their head in the sand and ignore more \textit{enthusiastically} than vectorization.  Pretend that another lab-mate tells you ``The compiler will do it way better than you ever can and it already does it all automagically anyways''.  How would you respond?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item The peak flops rate possible doubled from the processor before Sandy Bridge (``Nehalem'') to Sandy Bridge because of the introduction of 8-wide AVX SIMD registers.  Yet another lab-mate of yours is considering upgrading their processor from Nehalem to Sandy Bridge to take advantage of this increase in speed and they ask you if it's a good idea.  What would you tell them?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\eprob{5}{Feedback}
+
+\begin{enumerate}[a)]
+\item How much total time did you spend on this assignment?
+\item Of the total time, how much total time did you spend ``flailing'' on little annoying things that are not the main point of the assignment?
+\item Of the total time, how much total time did you spend on stretch problems?
+\item Did you work with anyone closely on this assignment?
+\item Did you have any ``aha'' moments where something clicked?  If so, on what problems or parts?
+\item Can you give me any feedback on this assignment?
+\item Fill out the mid-semester feedback survey found \href{https://docs.google.com/forms/d/1BtXfvcB9IVBBUworBuqiLIwri6lTcLw-NqEYhr5oNBQ/viewform?usp=send_form}{here}.  I know it's hard, but please try to comment on the class in general and not this specific assignment.
+\end{enumerate}
+
+\vskip 1cm
+\total
+
+
+\end{document}
+
+todo: triple the length of the next homework assignment.
