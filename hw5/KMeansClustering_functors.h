@@ -11,15 +11,22 @@
 struct
 ScalarClusterer {
 
-  std::array<std::vector<float>, 3> _centroids;
+  std::array<float*, 3> _centroids;
   std::array<std::vector<float>, 3> _nextCentroids;
   std::vector<unsigned int> _nextCentroidCounts;
 
   ScalarClusterer(const unsigned int numberOfCentroids) :
     _nextCentroidCounts(numberOfCentroids) {
     for (unsigned int coordinate = 0; coordinate < 3; ++coordinate) {
-      _centroids[coordinate].resize(numberOfCentroids);
+      _centroids[coordinate] =
+        allocateAlignedMemory<float>(numberOfCentroids, 64);
       _nextCentroids[coordinate].resize(numberOfCentroids);
+    }
+  }
+
+  ~ScalarClusterer() {
+    for (unsigned int coordinate = 0; coordinate < 3; ++coordinate) {
+      freeAlignedMemory<float>(&_centroids[coordinate]);
     }
   }
 
@@ -32,10 +39,11 @@ ScalarClusterer {
     const unsigned int numberOfPoints = points.size();
     const unsigned int numberOfCentroids = startingCentroids[0].size();
 
-    _centroids = startingCentroids;
-
     // Start with values of 0 for the next centroids
     for (unsigned int coordinate = 0; coordinate < 3; ++coordinate) {
+      std::copy(startingCentroids[coordinate].begin(),
+                startingCentroids[coordinate].end(),
+                &_centroids[coordinate][0]);
       std::fill(_nextCentroids[coordinate].begin(),
                 _nextCentroids[coordinate].end(), 0);
     }
@@ -100,7 +108,11 @@ ScalarClusterer {
         _nextCentroids[2][centroidIndex] = 0;
       }
     }
-    *finalCentroids = _centroids;
+    for (unsigned int coordinate = 0; coordinate < 3; ++coordinate) {
+      std::copy(&_centroids[coordinate][0],
+                &_centroids[coordinate][numberOfCentroids],
+                &(*finalCentroids)[coordinate][0]);
+    }
   }
 
 };
@@ -108,15 +120,22 @@ ScalarClusterer {
 struct
 VectorizedClusterer {
 
-  std::array<std::vector<float>, 3> _centroids;
+  std::array<float*, 3> _centroids;
   std::array<std::vector<float>, 3> _nextCentroids;
   std::vector<unsigned int> _nextCentroidCounts;
 
   VectorizedClusterer(const unsigned int numberOfCentroids) :
     _nextCentroidCounts(numberOfCentroids) {
     for (unsigned int coordinate = 0; coordinate < 3; ++coordinate) {
-      _centroids[coordinate].resize(numberOfCentroids);
+      _centroids[coordinate] =
+        allocateAlignedMemory<float>(numberOfCentroids, 64);
       _nextCentroids[coordinate].resize(numberOfCentroids);
+    }
+  }
+
+  ~VectorizedClusterer() {
+    for (unsigned int coordinate = 0; coordinate < 3; ++coordinate) {
+      freeAlignedMemory<float>(&_centroids[coordinate]);
     }
   }
 
@@ -131,10 +150,11 @@ VectorizedClusterer {
     const unsigned int numberOfPoints = points.size();
     const unsigned int numberOfCentroids = startingCentroids[0].size();
 
-    _centroids = startingCentroids;
-
     // Start with values of 0 for the next centroids
     for (unsigned int coordinate = 0; coordinate < 3; ++coordinate) {
+      std::copy(startingCentroids[coordinate].begin(),
+                startingCentroids[coordinate].end(),
+                &_centroids[coordinate][0]);
       std::fill(_nextCentroids[coordinate].begin(),
                 _nextCentroids[coordinate].end(), 0);
     }
@@ -199,7 +219,11 @@ VectorizedClusterer {
         _nextCentroids[2][centroidIndex] = 0;
       }
     }
-    *finalCentroids = _centroids;
+    for (unsigned int coordinate = 0; coordinate < 3; ++coordinate) {
+      std::copy(&_centroids[coordinate][0],
+                &_centroids[coordinate][numberOfCentroids],
+                &(*finalCentroids)[coordinate][0]);
+    }
   }
 
 };
