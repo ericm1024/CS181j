@@ -1,0 +1,147 @@
+\documentclass[11pt]{article}
+
+\usepackage[colorlinks=true]{hyperref}
+
+% This is a toggle for whether the solutions should be included in output of this document
+\newif\ifSolutions
+%\Solutionsfalse  % this is used to exclude the solutions
+\Solutionstrue  % this is used to include the solutions
+
+\input{../latexDefinitions}
+
+\head{6}{Sunday, October 18, 2015}{Wednesday, October 28, 2015}
+
+\estretchprob{50}{25}{SIMD Exploration}
+
+Design, implement, and analyze a problem that illustrates the efficacy of vectorization.
+
+If you're having trouble thinking of an example, pretend that you have a friend who refuses to think about vectorization and you're trying to teach your friend that s/he should care about it.  Make an example program to convince them of how it can be helpful.  Be creative!
+
+Or, consider the type of problem you do in your research. Make a toy program that models (goes through the same fundamental motions as) some core calculation that you do in your own research.  Vectorize it and see how well it performs.
+
+As you found out in the previous homework, even when the autovectorizer or openmp says that it vectorized, that doesn't always mean that it's faster.  If you are claiming that the autovectorizer or openmp vectorized your code, also implement a manual vectorization version to show that the autovectorizer or openmp is achieving appropriate speedups.
+
+As a reminder, these types of ``open-ended'' problems will be graded based on \textbf{how hard} your chosen example was, how well it \textbf{illustrates the concept}, how \textbf{well executed} the example was, and how correct your \textbf{analysis} is.
+
+You may work on this (pair programming) with a partner if you'd like.  However, your analysis, figures, and data must all be your own.
+
+\begin{itemize}
+\item I'm putting out a 20 point bounty on problems that openmp can vectorize but autovectorization can't.  If your open-ended problem uses openmp for vectorization and neither you nor I am able to get the autovectorizer to vectorize it, you'll get 20 stretch points on this problem, as well as all of the accompanying eternal glory.
+
+\item If you use Agner Fog's \href{http://www.agner.org/optimize/vectorclass.pdf}{Vector Class Library} for manual vectorization, you'll get 5 stretch points.
+
+\item If you'd like, you can use the existing placeholder source file \texttt{Main1.cc} as a starting point; it already has a rule in the \texttt{Makefile} for compiling it with vectorization flags.
+\end{itemize}
+
+\begin{enumerate}[a)]
+\item Would you classify your problem as easy (easy problems take little imagination and a relatively lower amount of effort, worth 70\%), standard (average imagination and average effort, worth 85\%), or hard (much imagination and a relatively larger amount of effort, worth 100\%)?  Give a couple-sentence justification - I need to see if I'm on the same page as you are.
+\item Describe the problem and present the observed behavior in ways that are clear enough to use as an example in class.  Remember, a good portion of your grade on these problems is presentation.  Pretend that I'm your boss at a company in 5 years and come to you with this question; answer it as you would to your boss.  You will find that pseudocode and plots are quite helpful for people to understand things.
+\item Implement the problem and demonstrate your performance improvement with a plot (preferable) or table.
+\end{enumerate}
+  
+If you're having trouble thinking of examples, you could do one of the following ideas that my grutors and I came up with.  Note: some of these may be hard and some may not work well; we're just trying to help you think of ideas.
+
+\begin{itemize}
+  \item Consider vectorizing your earlier open-ended problem on cache-awareness.
+  \item You could look at k-nearest neighbors from machine learning.
+  \item You could implement 2D image convolution.
+  \item You could browse the \href{https://software.intel.com/sites/landingpage/IntrinsicsGuide}{intrinsics guide}, find an interesting instruction, and design a problem to use it.
+  \item You could explore how conditional code (stuff with if and else) is done with vector registers; \texttt{Main0} on the last assignment had some of this.
+  \item You could explore the relative costs of the different ways of loading and storing data.
+  \item You could vectorize matrix multiplication and examine the impact of relative effects from tiles, bucketing, vectorization, and cache-friendliness.
+\end{itemize}
+
+
+
+
+
+
+
+\subsubsection*{Playing nicely}
+
+Unlike on previous assignments, from here on out your performance numbers will be affected if you run stuff at the same time as someone else is running things because now you'll be using all of the cores on the machine.  In the past, classes have found it useful to use the unix utility \texttt{top} or \texttt{htop} to see if someone else is running before they run their own stuff.  Remember, it's in your own best interest to not start running something when someone else is already running, because it messes up both of your results.  During the GPU assignment, they would sometimes coordinate via a Facebook chat or some other means.
+
+\eprob{25}{Threading of a Scalar Function Integrator}
+
+In this problem, we are going to use standard Riemann-style numerical integration to integrate \texttt{std::sin}, such as $\displaystyle\int_0^\pi \sin(x)= 2$. You're going to thread with \href{http://www.cplusplus.com/reference/thread/thread/}{std::thread} and \href{https://computing.llnl.gov/tutorials/openMP/}{openmp}. For this problem, you just need to fill in the functions that are in \texttt{Main2\_functions.h} - you shouldn't have to touch anything in \texttt{Main2.cc}. As usual, there is a compilable, runnable, and rather boring \texttt{Main0.cc} that contains much if not all of the syntax you'll need for the assignment.
+
+Implement the \texttt{std::thread} and \texttt{openmp} versions of the scalar integrator; the plots are already included here. Comment on your results.  What qualitative differences do you see between the two threading versions?  In what regions of the plot are different versions more effective?  Does anything surprise you?
+
+\ifSolutions
+\textbf{Solution:}
+{
+  \begin{figure}[ht]
+    \begin{center}
+    \begin{tabular}{cc}
+    \subfloat[speedup of std::thread over serial]{\includegraphics[width=3.5in, trim=.75in .5in .75in .5in]{figures/Main2_stdThreadVersusSerial_shuffler}} &
+    \subfloat[speedup of omp over serial]{\includegraphics[width=3.5in, trim=.75in .5in .75in 0in]{figures/Main2_ompVersusSerial_shuffler}} \\
+    \subfloat[speedup of std::thread over omp]{\includegraphics[width=3.5in, trim=.75in .5in .75in .5in]{figures/Main2_stdThreadVersusOmp_shuffler}} &
+    \subfloat[speedup of omp over std::thread]{\includegraphics[width=3.5in, trim=.75in .5in .75in 0in]{figures/Main2_ompVersusStdThread_shuffler}} \\
+    \end{tabular}
+    \end{center}
+    \caption{Speedups for scalar integration}
+    \label{fig:Problem2}
+  \end{figure}
+}
+
+\fi
+
+\FloatBarrier
+
+
+
+
+\vfill
+
+\eprob{20}{Back to the Real World}
+
+\begin{enumerate}[a)]
+\item Explain as you would to a ``non-technical'' friend of yours (who knows essentially nothing about computer architecture or operating systems) what threading is and why people care about it.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Explain as you would to a ``non-technical'' friend of yours the difference between \texttt{std::thread} and \texttt{openmp}.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Suppose your lab-mate says that they'd like to thread their code and they want your help.  What kind of questions would you ask them to figure out how to help them?  
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item You have written a serial program using all of the neat tools we've discussed up until now.  You want to do a parameter sweep, or to study the results of the program for many input configurations (say 1000).  The machine on which you're planning on running this program has, say, 16 cores.  How could you best utilize the machine to get the 1000 runs done as quickly as possible?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\eprob{5}{Feedback}
+
+\begin{enumerate}[a)]
+\item How much total time did you spend on this assignment?
+\item Of the total time, how much total time did you spend ``flailing'' on little annoying things that are not the main point of the assignment?
+\item Did you work with anyone closely on this assignment?
+\item Did you have any ``aha'' moments where something clicked?  If so, on what problems or parts?
+\item Can you give me any feedback on this assignment?
+\end{enumerate}
+
+
+\vfill
+
+\vskip 1cm
+\total
+
+\end{document}
+
+todo: figure out how many problems should go on the final exam
