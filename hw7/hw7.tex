@@ -70,8 +70,8 @@ For this problem, we'll return to our recurring example of \href{https://en.wiki
   \begin{figure}[ht]
     \begin{center}
     \begin{tabular}{cc}
-    \subfloat[log]{\includegraphics[width=3.0in, trim=1.1in .5in .75in .5in]{figures/KMeansClustering_threadedReductionVersusSerial_log_shuffler}} &
-    \subfloat[linear]{\includegraphics[width=3.0in, trim=1.1in .5in .75in .5in]{figures/KMeansClustering_threadedReductionVersusSerial_linear_shuffler}} \\
+    \subfloat[log]{\includegraphics[width=3.0in, trim=1.1in .5in .75in .5in]{figures/KMeansClustering_threadedVersusSerial_log_shuffler}} &
+    \subfloat[linear]{\includegraphics[width=3.0in, trim=1.1in .5in .75in .5in]{figures/KMeansClustering_threadedVersusSerial_linear_shuffler}} \\
     \end{tabular}
     \end{center}
     \caption{Performance for KMeansClustering}
@@ -174,7 +174,7 @@ Note that it can be a challenge just to get the threaded version to complete, le
     \includegraphics[width=4.0in, trim=1.1in .5in .75in .5in]{figures/MaximalIndependentSet_threadedMaskVersusSerialMask_shuffler}
     \end{center}
     \caption{Speedup from threading the mask version}
-    \label{fig:MaximalIndependentSet_serialSpeedup}
+    \label{fig:MaximalIndependentSet_threadedSpeedup}
   \end{figure}
 }
 
