@@ -124,4 +124,11 @@ writeMatrixToFile(const std::vector<std::vector<double> > & matrix,
 #define BG_WHITE            "\033[47m"
 #define BG_DEFAULT          "\033[49m"
 
+#define warning(s, ...)                                         \
+  do {                                                          \
+    fprintf (stderr, BOLD_ON FG_YELLOW "WARNING:   " RESET s,   \
+             ##__VA_ARGS__);                                    \
+    fflush (stderr);                                            \
+  } while (0)
+
 #endif // UTILITIES_H

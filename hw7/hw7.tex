@@ -1,0 +1,250 @@
+\documentclass[11pt]{article}
+
+\usepackage[colorlinks=true]{hyperref}
+
+% This is a toggle for whether the solutions should be included in output of this document
+\newif\ifSolutions
+%\Solutionsfalse  % this is used to exclude the solutions
+\Solutionstrue  % this is used to include the solutions
+
+\input{../latexDefinitions}
+
+\head{7: The Threads of Fate}{Friday, Oct 30, 2015}{Wednesday, Nov 4, 2015}
+
+Openmp is a fantastic way to thread straight-forward ``flat parallel'' problems for low-core-count CPUs, such as the scalar integration of the previous assignment.  However, few algorithms are as embarrasingly- and trivially-parallelizable as to be parallelized with a single ``\texttt{\#pragma omp parallel for}''.  In this assignment you'll explore three problems which are still parallelizable via openmp, but require a bit more thought than just throwing in a single line. As usual, I have provided serial versions of the algorithms as well as all the testing, timing, and rendering bits.  You should only have to insert code at the \texttt{TODOs} within the \texttt{\_functors} and \texttt{\_functions} files.
+
+You should use \href{https://computing.llnl.gov/tutorials/openMP/}{openmp} for all of these problems.  The solution uses \texttt{pragma omp parallel}, \texttt{for}, \href{https://computing.llnl.gov/tutorials/openMP/#BARRIER}{barrier} and \href{https://computing.llnl.gov/tutorials/openMP/#CRITICAL}{critical}; it doesn't use any locks.
+
+\eprob{10}{Threaded FindIndexOfNearestPoint}
+
+Our first example will be a warm-up.  In \texttt{FindIndexOfNearestPoint\_functions.cc} you'll find a serial version of a utility function to find the index of the closest point in a \texttt{vector<Point>} to some search location.  
+
+\begin{enumerate}[a)]
+\item Make a threaded version of the algorithm using openmp.  The performance plot is included here; comment on what you see.  When do you get good speedup?  Why?
+  
+\ifSolutions
+\textbf{Solution:}
+{
+  \begin{figure}[ht]
+    \begin{center}
+    \begin{tabular}{cc}
+    \subfloat[log]{\includegraphics[width=3.0in, trim=1.1in .5in .75in .5in]{figures/FindIndexOfClosestPoint_threadedVersusSerial_log_shuffler}} &
+    \subfloat[linear]{\includegraphics[width=3.0in, trim=1.1in .5in .75in .5in]{figures/FindIndexOfClosestPoint_threadedVersusSerial_linear_shuffler}} \\
+    \end{tabular}
+    \end{center}
+    \caption{Performance for FindIndexOfNearestPoint}
+    \label{fig:FindIndexOfNearestPoint}
+  \end{figure}
+}
+
+\fi
+
+\item It's important to think about how ``correct'' your new answer is.  Do you always get the same answer from the threaded version as you did from the serial version?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\FloatBarrier
+
+\vfill
+
+
+
+
+
+
+\eprob{20}{Threaded k-means}
+
+For this problem, we'll return to our recurring example of \href{https://en.wikipedia.org/wiki/K-means_clustering}{k-means clustering} (for a refresher on what it is, see homework 5).  Don't worry about using the vectorized version from your previous assignment - I've included a serial version without vectorization because it's more compact.
+
+\begin{enumerate}[a)]
+\item Make a threaded version of the algorithm using openmp.  The performance plot is included here; comment on what you see.  When do you get good speedup?  Why?
+  
+\ifSolutions
+\textbf{Solution:}
+{
+  \begin{figure}[ht]
+    \begin{center}
+    \begin{tabular}{cc}
+    \subfloat[log]{\includegraphics[width=3.0in, trim=1.1in .5in .75in .5in]{figures/KMeansClustering_threadedReductionVersusSerial_log_shuffler}} &
+    \subfloat[linear]{\includegraphics[width=3.0in, trim=1.1in .5in .75in .5in]{figures/KMeansClustering_threadedReductionVersusSerial_linear_shuffler}} \\
+    \end{tabular}
+    \end{center}
+    \caption{Performance for KMeansClustering}
+    \label{fig:KMeansClustering}
+  \end{figure}
+}
+
+\fi
+
+\item It's important to think about how ``correct'' your new answer is.  Do you always get the same answer from the threaded version as you did from the serial version?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\FloatBarrier
+
+\vfill
+
+
+
+
+
+
+\eprob{50}{Threaded Maximal Independent Set}
+
+For this example, we'll thread the finding of a maximal independent set of a graph.  Now, if that doesn't mean anything to you, never fear!  You shouldn't need prior knowledge of graphs to be able to do this.  
+
+A graph is a set of nodes and edges, and the edges connect the nodes.  In the code, this is implemented as a set of vertices and a collection of neighbors per vertex.
+
+An \href{https://en.wikipedia.org/wiki/Independent_set_(graph_theory)}{independent set} of vertices is a set of vertices such that no two are neighbors.  It's pretty easy to get an independent set from a graph - you can just make a set of any vertex from the graph.  If you want to add another vertex to this independent set, you just have to make sure that the second vertex is not a neighbor of the first. A \href{https://en.wikipedia.org/wiki/Maximal_independent_set}{maximal independent set} is an independent set to which you cannot add any vertices from the graph without breaking its independence.  
+
+The easiest way to find a maximal independent set of a graph is to start with the set of vertices (\texttt{candidates}), pick one and add it to the independent set, remove all of the neighbors of that vertex from the candidates, and repeat until there are no more candidates.
+
+\begin{verbatim}
+candidates = vertices
+while (candidates.size() > 0)
+  vertexToAdd = first entry in candidates
+  add vertexToAdd to independent set
+  remove vertexToAdd from candidates
+  for each neighbor of vertexToAdd
+    remove neighbor from candidates
+\end{verbatim}
+
+While finding a maximal independent set is a parallelizable problem, this first version requires some reformulating.  In particular, we have to somehow get work that can be done independently.  For example, suppose that we are considering vertex 75 for insertion into the independent set.  We have to somehow figure out a way to determine if vertex 75 should be inserted into the independent set without creating a race condition or dependencies on any other vertices.
+
+The way we'll make the problem independent is to use a criterion for insertion which doesn't depend on any other vertices having been checked: if a candidate vertex has a higher vertex id than any of its neighbors who are also candidates, it'll insert itself.
+
+\begin{verbatim}
+candidates = vertices
+while (candidates.size() > 0)
+  for each candidate in candidates
+    set thisVertexShouldBeAddedToIndependentSet to true
+    for each neighbor of candidate
+      if the neighbor is in candidates and has a higher vertex id
+        set thisVertexShouldBeAddedToIndependentSet to false
+   
+    if thisVertexShouldBeAddedToIndependentSet is true
+      add candidate to independent set
+      for each neighbor of candidate
+        remove neighbor from candidates
+      remove candidate from candidates
+\end{verbatim}
+
+This is \textit{almost} parallelizable over the \texttt{for each candidate} loop, but it depends on the data structure used to store the \texttt{candidates} because it may not be safe for multiple threads to use that data structure if at least one is removing things from it.
+
+\begin{enumerate}[a)]
+\item Right now, the \texttt{serial} version uses a \texttt{std::set} to represent the \texttt{candidates} (the independent set is a \textit{set}, after all, so it's a perfect match, right?!).  However, this data structure is not safe to access concurrently if one thread is removing values.  
+
+It is faster and more thread-safe to instead store the \texttt{candidates} as a simple array (mask) of boolean values \texttt{bool * candidates = new bool[numberOfVertices]} (it may surprise you as it did me, but it turns out that a \texttt{vector<bool>} is actually a bad data structure and you should avoid it in general and \textit{especially} on this problem).  For this part of the problem, populate the \texttt{serialMask} version by following the same logic as the \texttt{serial} version, but by using a bool mask instead of a \texttt{std::set} to represent the \texttt{candidates}.
+
+The speedup is plotted below.  Comment on your results.
+  
+\ifSolutions
+\textbf{Solution:}
+{
+  \begin{figure}[ht]
+    \begin{center}
+    \includegraphics[width=4.0in]{figures/MaximalIndependentSet_serialSpeedup_shuffler}
+    \end{center}
+    \caption{Speedup from using mask over a \texttt{std::set}}
+    \label{fig:MaximalIndependentSet_serialSpeedup}
+  \end{figure}
+}
+
+\fi
+
+\item Populate the \texttt{threaded} version by threading the \texttt{serialMask} version of the previous part with \texttt{openmp}. The speedup is plotted below.  Comment on your results.
+  
+Note that it can be a challenge just to get the threaded version to complete, let alone get any speedup.  You'll get half of the points for this part if your threaded implementation works (and is still actually threaded, not serialized by a global lock or something), and the other half depends on how well it works.
+
+\ifSolutions
+\textbf{Solution:}
+{
+  \begin{figure}[ht]
+    \begin{center}
+    \includegraphics[width=4.0in, trim=1.1in .5in .75in .5in]{figures/MaximalIndependentSet_threadedMaskVersusSerialMask_shuffler}
+    \end{center}
+    \caption{Speedup from threading the mask version}
+    \label{fig:MaximalIndependentSet_serialSpeedup}
+  \end{figure}
+}
+
+\fi
+
+\item It's important to think about how ``correct'' your new answer is.  Do you always get the same answer from the \texttt{serialMask} version as you did from the \texttt{serial} version?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Do you always get the same answer from the \texttt{threadedMask} version as you did from the \texttt{serialMask} version?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\FloatBarrier
+
+\vfill
+
+\eprob{15}{Back to the Real World}
+
+Provide short (but sufficient) answers to the following prompts:
+
+\begin{enumerate}[a)]
+
+\item Explain as you would to a ``non-technical'' friend of yours the difference between getting a final threaded answer via reductions, atomics, or locks.  Which is ``best''?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Explain as you would to a ``non-technical'' friend of yours what thread load balancing is and why people care about it.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Explain as you would to a ``non-technical'' friend of yours what static, dynamic, and guided work scheduling techniques are.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\eprob{5}{Feedback}
+
+\begin{enumerate}[a)]
+\item How much total time did you spend on this assignment?
+\item Of the total time, how much total time did you spend ``flailing'' on little annoying things that are not the main point of the assignment?
+\item Did you work with anyone closely on this assignment?
+\item Did you have any ``aha'' moments where something clicked?  If so, on what problems or parts?
+\item This is a new assignment; can you give me feedback on it?  Is it too easy?  Too hard?  Uninteresting?
+\end{enumerate}
+
+\vfill
+
+\vskip 1cm
+\total
+
+
+\end{document}
+
+todo: finish vectorizing the ChunkyMatrix problem for next week
