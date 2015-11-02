@@ -32,7 +32,7 @@ SerialClusterer {
     ignoreUnusedVariable(ignoredNumberOfThreads);
 
     const unsigned int numberOfPoints = points.size();
-    const unsigned int numberOfCentroids = startingCentroids[0].size();
+    const unsigned int numberOfCentroids = startingCentroids.size();
 
     _centroids = startingCentroids;
 
