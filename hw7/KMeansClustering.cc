@@ -26,28 +26,23 @@ checkResult(const vector<Point> & correctResult,
             const string & testName,
             const double absoluteErrorTolerance) {
   char sprintfBuffer[500];
-  if (correctResult[0].size() != testResult[0].size()) {
+  if (correctResult.size() != testResult.size()) {
     sprintf(sprintfBuffer, "test result has the wrong number of entries: %zu "
             "instead of %zu, test named "
             BOLD_ON FG_RED "%s" RESET "\n",
-            testResult[0].size(), correctResult[0].size(),
+            testResult.size(), correctResult.size(),
             testName.c_str());
     throw std::runtime_error(sprintfBuffer);
   }
-  for (size_t i = 0; i < correctResult[0].size(); ++i) {
-    double absoluteError = 0;
-    for (unsigned int coordinate = 0; coordinate < 3; ++coordinate) {
-      absoluteError +=
-        (correctResult[coordinate][i] - testResult[coordinate][i]) *
-        (correctResult[coordinate][i] - testResult[coordinate][i]);
-    }
-    absoluteError = std::sqrt(absoluteError);
+  for (size_t i = 0; i < correctResult.size(); ++i) {
+    const double absoluteError =
+      magnitude(correctResult[i] - testResult[i]);
     if (absoluteError > absoluteErrorTolerance) {
       sprintf(sprintfBuffer, "wrong result for centroid number %zu in test result, "
               "it's (%e, %e, %e) but should be (%e, %e, %e), test named "
               BOLD_ON FG_RED "%s" RESET "\n", i,
-              testResult[0][i], testResult[1][i], testResult[2][i],
-              correctResult[0][i], correctResult[1][i], correctResult[2][i],
+              testResult[i][0], testResult[i][1], testResult[i][2],
+              correctResult[i][0], correctResult[i][1], correctResult[i][2],
               testName.c_str());
       throw std::runtime_error(sprintfBuffer);
     }
