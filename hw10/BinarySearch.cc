@@ -26,31 +26,7 @@ bool
 findKeyInSortedNumbers_cpu(const unsigned int * const sortedNumbers,
                            const unsigned int numberOfSortedNumbers,
                            const unsigned int key) {
-  unsigned int minIndex = 0;
-  unsigned int maxIndex = numberOfSortedNumbers;
-  if (key > sortedNumbers[numberOfSortedNumbers - 1]) {
-    return false;
-  }
-  if (key < sortedNumbers[0]) {
-    return false;
-  }
-
-  while (maxIndex >= minIndex) {
-    const unsigned int midpointIndex = (minIndex + maxIndex) / 2;
-    if (midpointIndex >= numberOfSortedNumbers) {
-      printf("invalid midpoint index %4u for key %5u\n",
-             midpointIndex, key);
-      exit(1);
-    }
-    if (sortedNumbers[midpointIndex] == key) {
-      return true;
-    } else if (sortedNumbers[midpointIndex] < key) {
-      minIndex = midpointIndex + 1;
-    } else {
-      maxIndex = midpointIndex - 1;
-    }
-  }
-  return false;
+  // TODO
 }
 
 bool
