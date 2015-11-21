@@ -239,7 +239,7 @@ int main() {
       // check the result
       checkResult(correctRowMajorResultMatrix,
                   rowMajorResultMatrix,
-                  convertCudaMatrixMultiplicationStyleToString(Naive_RowMajorTimesColMajor),
+                  convertCudaMatrixMultiplicationStyleToString(cudaMatrixMultiplicationStyle),
                   absoluteErrorTolerance);
       fprintf(resultsFile, ", %10.4e", elapsedTime);
     }
