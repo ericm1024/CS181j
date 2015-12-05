@@ -7,6 +7,7 @@
 #include <fstream>
 #include <cmath>
 #include <algorithm>
+#include <numeric>
 
 // This is a little utility function that can be used to suppress any
 //  compiler warnings about unused variables.

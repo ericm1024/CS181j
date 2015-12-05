@@ -1,0 +1,358 @@
+\documentclass[11pt]{article}
+
+\usepackage[colorlinks=true]{hyperref}
+
+% This is a toggle for whether the solutions should be included in output of this document
+\newif\ifSolutions
+%\Solutionsfalse  % this is used to exclude the solutions
+\Solutionstrue  % this is used to include the solutions
+
+\input{../latexDefinitions}
+
+\head{12}{Friday, Dec 4, 2015}{Friday, Dec 11, 2015}
+
+In this homework assignment, you'll do some examples of using basic \href{http://www.open-mpi.org/doc/v1.8/}{MPI} features.  
+To warm up, you'll parallelize the simple scalar integrator, which gives you practice with collectives.
+Next, you'll parallelize the wave equation, which gives you practices with point-to-point communication.
+Next, you'll visit Mordor for an exercise that helps you think about communication patterns.  
+Finally, you'll be implementing a communication pattern that is common in large-scale scientific codes.
+
+Blah blah, \texttt{Main0.cc}, example syntax, yadda yadda.
+
+On this assignment, we won't actually be doing any careful timing or speedups because we only have shared memory machines on which to run, which is a bummer.  
+You won't have to worry about ``running at the same time'' as other people because it shouldn't affect your results at all, but feel free to run on \texttt{knuth} if you feel like 12 cores isn't enough for you (first world problems!).
+
+\textbf{Note:} Friendly PSA: if you want to send the contents of a \texttt{vector\textless Something\textgreater  v} with MPI, you need to pass a pointer to the first entry in \texttt{v}, which is \texttt{\&v[0]}, \textbf{NOT} \texttt{\&v}.
+
+\eprob{5}{Strong scaling is hard}
+
+It is often quite difficult to achieve good scaling in parallel programs.  
+That is, if you run a parallel program on $n$ processors, it is hard to get it to go $n$ times as fast.  
+I often hear some dubious claims about speedups on the order of thousands, which is enough to raise eyebrows.
+
+Suppose that you sit down and think about your algorithm and determine that $s$\% of it must be done in serial.  
+You have access to an enormous supercomputer and have no limit to the number of processors you can use.  
+Parallel portion runtimes scale linearly with how many processors used.  
+Ignore cores for now.
+
+Derive an expression for the theoretical speedup possible for an algorithm that is $s$\% inherently serial run on $p$ processors, where the parallel sections scale linearly.  
+Plot this expression versus $p$ for various values of $s$.  
+What is required to get speedups on the order of thousands?  
+What are some aspects of parallel computing that might keep you from getting this type of speedup?
+
+\ifSolutions
+\textbf{Solution:}
+
+\begin{equation}
+  \text{speedup}=\frac{\pi}{e} > 9000
+\end{equation}
+
+{
+  \begin{center}
+  \includegraphics[width=4.0 in]{StrongScaling}
+  \end{center}
+}
+
+\fi
+
+\vfill
+
+
+
+
+
+
+
+
+\eprob{5}{Integration with Messages}
+
+Parallelize the scalar function integrator.  
+What's the minimum problem size you have to be doing to get any appreciable speedup? 
+For the largest number of intervals ($10^9$), how well does your program scale versus the number of processes?
+
+\ifSolutions
+\textbf{Solution:}
+
+\begin{center}
+  \begin{tabular}{ | c | c | c |}
+    \hline
+    Number Of Processes  & Runtime & Speedup     \\ \hline \hline
+    1  & TODO & 1.0     \\ \hline
+    6  & TODO & TODO \\ \hline
+    12 & TODO & TODO \\ \hline
+    24 & TODO & TODO \\ \hline
+  \end{tabular}
+\end{center}
+
+\fi
+
+\vfill
+
+
+
+
+
+
+
+
+
+\estretchprob{0}{15}{K Means I'll Never Do This Again}
+
+Alright, so you've vectorized it, threaded it, and GPU-ized it - it's time to distributed-memory-parallelize it.  
+Parallelize the K-Means clustering calculation.
+Don't worry about going fast, just get the same answer (i.e., you should be able to run it with ``\texttt{mpirun -np 12 ./KMeansClustering}'' and it should complete successfully).
+
+\ifSolutions
+\textbf{Solution:}
+
+Well, uh, does it work?
+
+\fi
+
+\vfill
+
+
+
+
+
+
+
+
+
+
+\eprob{10}{Making Distributed Waves}
+
+Parallelize the provided serial equation solver.  Don't worry about any fancy tricks to reduce communication, just communicate on every timestep.
+
+\begin{enumerate}[a)]
+\item Include a couple of plots (boo!) or a link to a movie (yay!) that shows a waveform moving through the domain.  
+  
+\ifSolutions
+\textbf{Solution:}
+
+I love this \href{https://www.youtube.com/watch?v=cvCjyWp3rEk}{video} so much.
+
+\fi
+
+\item More or less, how well does the parallel wave equation solver scale compared to the threaded solver's scaling?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\textbf{Note:} In order to postprocess the data, you'll need to add an argument for the number of processes you used in the simulation: \texttt{``python generate1DFDWaveEquationPlots\_mpi.py 24''} and \texttt{``./MakeMovie 24''}.  
+The figures are colored by the rank that wrote each piece of the domain.
+
+\vfill
+
+
+
+
+
+
+
+
+
+
+
+
+\eprob{20}{Frodo's Chocolates}
+
+Frodo is invited to Saruman's variant of a white elephant gift exchange where players each bring a gift, sit in a circle, and pass their gifts some number of times randomly either all to the left or all to the right.  
+Because Frodo brought chocolates to the party and everyone else brought old homework assignments, Frodo's gift is highly desired.  
+The party is very long: exchanges will be made some large number of times (\texttt{maxExchanges}, like 10000).  
+However, the participants are impatient and, if one participant is passed the delectable chocolates some other smaller number of times (\texttt{rageQuitLimit}, like 100), the person will ragequit and run away with them.
+
+Perform a simulation modeling this gift exchange.  In particular,
+
+\begin{itemize}
+\item Each rank will start with a gift and keep track of the number of times it ends up with Frodo's gift.
+\item On each one of the \texttt{maxExchanges} exchanges, all ranks pass their current gift either to the right or to the left. 
+The right neighbors of ranks $0$, $4$, and $n-1$ are $1$, $5$, and $0$ respectively. 
+The left neighbors of ranks $0$, $4$, and $n-1$ are $n-1$, $3$, and $n-2$ respectively.
+
+\textbf{Note:} Friendly PSA: -1 \% 3 is not 2.
+
+\item The game ends when either the max number of allowed exchanges (\texttt{maxExchanges}) have been made or a rank has held Frodo's chocolates \texttt{rageQuitLimit} times.
+\item Once the game has ended, use the provided script to make a bar graph showing the number of times each rank held Frodo's chocolates.
+\item The results must be different each time you run the program (i.e. don't fix the random seed).
+\end{itemize}
+
+\begin{enumerate}[a)]
+\item Just for funsies, what do you expect the final distribution of chocolate-holding frequency to be?  
+How will it be affected by \texttt{maxExchange}, \texttt{rageQuitLimit}, and the total number of processes?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item List two ways in which you can make sure that all ranks are passing in the same direction at the same time.  
+Be specific: what function calls would you make, who makes them, etc.?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item How do you make sure that the game ends gracefully and the distribution of chocolate-holding is correctly compiled when one player quits?
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Implement the simulation. 
+Show some (more than one) final chocolate-holding frequency distributions for some interesting combinations of \texttt{maxExchange}, \texttt{rageQuitLimit}, and the total number of processes.  
+Were your predictions in part a correct?
+
+\ifSolutions
+\textbf{Solution:}
+
+{
+  \begin{center}
+  \includegraphics[width=3.0 in]{figures/FrodosChocolates1}
+  \end{center}
+}
+
+\fi
+
+\end{enumerate}
+
+\vfill
+
+
+
+
+
+
+
+
+
+
+
+\eprob{40}{Funball aftermath}
+
+After a particularly raucous funball, the students wake up the following morning to find that there is money scattered everywhere (among other things). 
+In this problem, each rank represents a dorm, and each dorm houses students with IDs that are unique within that dorm. 
+Just like in real life, all the money that's scattered around is marked with the owner's dorm and the owner's ID within that dorm.
+At least one \texttt{MuddMoney} exists for each student.
+
+Write the communication that returns all of the money to its proper owners.
+This outline might help you (or not):
+
+\begin{verbatim}
+initialize this rank's MuddMoneys
+store all of the MuddMoneys which belong to students in this dorm (rank)
+send all the MuddMoneys which belong to students from other dorms to their dorms
+receive MuddMoneys that belong to your students
+add received MuddMoney values to your students' MuddMoneys
+check answer
+\end{verbatim}
+
+Some notes:
+
+\begin{itemize}
+  \item You are a dorm. 
+You house some fixed number of students \texttt{N}. 
+After funball, you find some number of Mudd moneys \texttt{M} where \texttt{M}$>$\texttt{N}. 
+You are guaranteed to start with one mudd money per student in your dorm.
+You also have some other mudd moneys that belong to students in other dorms. 
+  \item After you sort everything out, you need to have a vector of MuddMoneys, one per student in your dorm, with the total money that belongs to each student. 
+In other words, you'll need to sum moneys that you receive into the moneys you have.
+The vector does not have to be in any particular order to pass the check.
+  \item The ID of each student in a dorm is unique \textit{within} that dorm, but their IDs are \textit{not} globally unique.
+For example, I think that every dorm has a student 0.
+  \item The IDs of the students in each dorm are not contiguous; each dorm may have 1000 students, but one student ID may be 1234567.
+  \item There is too much total money to bring all of it to one rank with a \texttt{Gather} or \texttt{Allgather}.  
+You may use collective operations (such as \texttt{Allreduce} or \texttt{Gather}) to \emph{coordinate} between the ranks, but \textbf{MuddMoney must only be communicated in point-to-point communication}.
+  \item If rank 7 has to send 8 moneys to rank 3, it should only send one message.  
+Don't send each individual MuddMoney in a separate message.  
+That is lunacy.
+  \item Each dorm (rank) will only need to send information to a subset of all of the dorms, not to everyone.  
+For example, there may be $50$ total ranks, but rank $5$ is only going to need to send information to maybe $8$ other ranks.  
+Except for any collective operations you use to coordinate, each rank should only do point-to-point communication with the ranks it \textit{has to} send information to, not to every rank out there.
+That would also be lunacy.
+  \item You are welcome to change the random seed to a fixed number for debugging purposes, but for grading, your code will be tested with a random seed and several different numbers of ranks (like 5, 10, 25, and 50).
+Please commit your code with a random seed, or grutors will be sad and cranky.
+
+\end{itemize}
+
+\ifSolutions
+\textbf{Solution:}
+
+Well, uh, did it work?
+
+\fi
+
+\vfill
+
+
+
+
+
+
+
+
+
+
+
+
+\eprob{15}{Back to the Real World}
+
+\begin{enumerate}[a)]
+\item Explain as you would to a ``non-technical'' friend of yours what a cluster is.
+  
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Explain as you would to a ``non-technical'' friend of yours what distributed-memory parallel programming is and how MPI fits into anything.
+  
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\item Explain as you would to a ``non-technical'' friend of yours the difference between blocking and non-blocking communication.
+  
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+  
+\item Suppose your lab-mate hears that MPI make codes go really fast and asks for your help in parallelizing their code.  
+What kind of questions would you ask them to figure out if parallelizing their code is a good idea or even possible?  
+  
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+\end{enumerate}
+
+\eprob{5}{Feedback}
+
+\begin{enumerate}[a)]
+\item How much total time did you spend on this assignment?
+\item Of the total time, how much total time did you spend ``flailing'' on little annoying things that are not the main point of the assignment?
+\item Did you have any ``aha'' moments where something clicked?  If so, on what problems or parts?
+\item Can you give me any feedback on this assignment?
+\item If you want to, add a cat picture (or some other picture that would be fun) to use on assignments the next time I teach this.
+\begin{center}
+    \includegraphics[width=4.0 in]{JamesSaindonStretchProblems}
+\end{center}
+\end{enumerate}
+
+\vfill
+
+\vskip 1cm
+\total
+
+\end{document}
+
+todo: prepare the papi-ed, bucketed, vectorized, threaded, gpu-ized, and distributed-memory-parallelized matrix multiplication problem for the last homework.  stretch points for incorporating the communication avoidance from the colloquium.
