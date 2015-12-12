@@ -1,0 +1,259 @@
+\documentclass[11pt]{article}
+
+\usepackage[colorlinks=true]{hyperref}
+\usepackage{afterpage}
+\usepackage{enumerate}
+
+% This is a toggle for whether the solutions should be included in output of this document
+\newif\ifSolutions
+%\Solutionsfalse  % this is used to exclude the solutions
+\Solutionstrue  % this is used to include the solutions
+
+\input{../latexDefinitions}
+
+\head{13}{Friday, December 11, 2015}{\href{https://www.youtube.com/watch?v=kfVsfOSbJY0t=45}{Friday}, December 18, 2015}
+
+In this homework assignment, you'll parallelize a simplistic 2D \textbf{molecular dynamics} simulation using \href{http://www.open-mpi.org/doc/v1.8/}{MPI} and produce something that looks like \href{https://www.youtube.com/watch?v=\_4cFGOkoSoI}{this}. 
+As discussed in class, in general you can parallelize in one of two paradigms: \textbf{``Big Picture''} where everyone sees the big picture or \textbf{``Need to Know''}, where each process actually only has a subset of the domain.  
+On this assignment, you'll do both techniques.
+
+The way that the particles interact is not important (and it's totally bogus, by the way), but the data that is needed to update particle positions is important.  
+In particular, in order to calculate the new position of each particle on a given timestep, you need to know the previous position and velocity of all particles within some cutoff distance, and you need the previous position, velocity, and acceleration of the particle you're updating.
+
+Serial implementations are provided for you.  
+I'll need you to provide \textbf{movies} for this assignment; I cannot tell if it's working without movies, so upload them to youtube or somehow make them available to me.  
+The code has a tunable parameter named \texttt{stickingTimescale}, which can be used to determine how much the particles stick to each other when they collide.  
+You can change this for fun, but your movies must be made at the \texttt{stickingTimescale} that I provide in the starting code.
+
+Don't try to make these implementations super efficient by hiding communication cost or anything, just get them working.  
+They won't even necessarily go any faster than the serial versions because the problem is just so absurdly, unbelievably small.  
+However, egregiously inefficient implementations, such as all processes communicating with all other processes or processes sending each other way more messages than necessary (where one or two would be sufficient), will receive lower grades.
+
+{
+  \begin{figure}[h!]
+    \begin{center}
+    \includegraphics[width=6.0 in]{Mini2dMD_NeedToKnow_036_00000}
+    \end{center}
+    \caption{Initial State}
+    \label{fig:InitialState}
+  \end{figure}
+}
+{
+  \begin{figure}[h!]
+    \begin{center}
+    \includegraphics[width=6.0 in]{Mini2dMD_NeedToKnow_036_00079}
+    \end{center}
+    \caption{Intermediate State}
+    \label{fig:IntermediateState}
+  \end{figure}
+}
+{
+  \begin{figure}[h!]
+    \begin{center}
+    \includegraphics[width=6.0 in]{Mini2dMD_NeedToKnow_036_00249}
+    \end{center}
+    \caption{Final State}
+    \label{fig:FinalState}
+  \end{figure}
+}
+
+\afterpage{\clearpage}
+
+
+
+
+
+
+
+
+
+
+
+\eprob{25}{Big Picture}
+
+Parallelize the MD solver with ``Big Picture'' parallelism.
+
+\begin{enumerate}[a)]
+\item (10 points) Describe in pseudocode the ``Big Picture'' version of the code, including what MPI functions you would call and what data is stored where.  
+Start from the following pseudocode of what's provided:
+
+\textbf{Solution:}
+
+\begin{verbatim}
+generate initial positions and velocities for all of the particles in the simulation
+vector<Point> positions
+vector<Vector> velocities
+vector<Vector> accelerations
+for each timestep
+  find neighbors of all particles
+  calculate the force on each particle and average velocity of neighbors
+  calculate the new velocity of each particle using the current force,
+    the old acceleration, and the old average velocity of neighbors and
+    store the new velocity into velocities
+  store the acceleration of each particle into accelerations
+  calculate the new position of each particle and store into positions
+  apply boundary conditions to velocities and positions
+  write output file
+\end{verbatim}
+
+\item (15 points) Implement the ``Big Picture'' version, make a movie for 20 processes, and make it available to me.
+
+\end{enumerate}
+
+\begin{itemize}
+\item \textbf{Note:} this version should get exactly the same answer, regardless of the number of processes used.  
+For correctness purposes, make sure that the last frame of the movie looks the same for 1 or (say) 20 processes.
+\item There is an expensive black box function to find neighbors so that you don't have to do it.  
+Don't modify this function; you don't need to parallelize it for this assignment.
+\item The code outputs the magnitude of the total velocity across the entire simulation.  This is just a quick sanity check so that you can know if your current attempt is exploding or not without having to render the thing.
+\end{itemize}
+
+\ifSolutions
+\textbf{Solution:}
+
+I see the \href{https://www.youtube.com/watch?v=J---aiyznGQ}{big picture}.
+
+\fi
+
+\newpage
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\eprob{45}{Need to Know}
+
+Here's the moment you've been waiting for, your chance at the minor leagues: \href{https://youtu.be/LkCNJRfSZBU?t=83}{parallelize} the MD solver with ``Need to Know'' parallelism.  
+This is a hard problem.  
+You should think hard about and do part a for sure, but only do part b if it's worth the points to you.
+
+\begin{enumerate}[a)]
+\item (15 points) Describe in pseudocode the ``Need to Know'' version of the code, including what MPI functions you would call and what data is stored where.  
+Note that because it will be difficult for many people to get their ``Need to Know'' version working, I will be using your pseudocode in this problem to determine if you see what needs to be done in order to parallelize the problem.  
+I will grade this carefully; be very specific - statements \href{https://www.youtube.com/watch?v=lj3iNxZ8Dww#t=25}{like, such as} ``the process sends data to other processes'' are not sufficient.  
+When you are sending something to another rank, be very specific: what are you sending, to whom, with what kind of send?
+Start from the following pseudocode of what's provided:
+
+\textbf{Solution:}
+
+\begin{verbatim}
+generate initial positions and velocities for all of the particles in the simulation
+vector<Point> positions
+vector<Vector> velocities
+vector<Vector> accelerations
+for each timestep
+  find neighbors of all particles
+  calculate the force on each particle and average velocity of neighbors
+  calculate the new velocity of each particle using the current force,
+    the old acceleration, and the old average velocity of neighbors and
+    store the new velocity into velocities
+  store the acceleration of each particle into accelerations
+  calculate the new position of each particle and store into positions
+  apply boundary conditions to velocities and positions
+  write output file
+\end{verbatim}
+
+\item (30 points) Implement the ``Need to Know'' version, make a movie for 16 processes, and make it available to me. 
+
+\ifSolutions
+\textbf{Solution:}
+
+I have a \href{https://www.youtube.com/watch?v=oKI-tD0L18A&}{need to know}.
+
+\fi
+
+\end{enumerate}
+
+\begin{itemize}
+\item If we were implementing a form of this ``Need to Know'' version for an arbitrary number of processes, it would be really hard.
+To simplify, require that the number of processes used be a runtime-provided ``square'' such as 9 or 16, so that you can split up the domain into a grid of boxes.  
+The solution uses the domain decomposition shown in figure \ref{fig:ShadowRegions}, but you can do whatever you'd like.  
+Note: to clarify, you're not hard-coding a certain number of processes, you are just restricting the admissible numbers to 1, 4, 9, 16, 25, 36, etc.  
+I will run your code with numbers other than 16 processes.
+\item As usual, coordination may be done with collectives, but any data (positions, velocities, accelerations, etc.) must be sent by point-to-point communication, not in collectives.
+\item Each rank will have to send shadow particles to its (up to) 8 neighbors.   
+However, because the particle position update requires neighbor positions \emph{and} velocities, you'll need to send both positions and velocities to the neighbors.
+\item You will need to not only send shadow particles between processes, but when particles leave your rank's boundaries, you'll also have to transfer ownership of particles between processes.  
+When you do this, you need to transfer not just the particle position, but also its velocity and acceleration.
+\item You may use the \texttt{BoundingBox}'s \texttt{computeBoundaryProximity} function if you'd like; the solution uses it with \texttt{thisRanksBoundingBox} to figure out to which (one or more) of the rank's eight neighbors a given point needs to be shadowed.
+\item In the solution, no one rank ever stores the particles in the entire simulation, even during initialization.  
+You are allowed to have one rank see the big picture during initialization, but after initialization each rank must only have its individual piece of the problem.
+\item The version of MPI on shuffler is compiled such that processes spin while waiting for messages, which means that if you run more processes than the number of cores, each collective communication will take the os thread scheduler's quantum, which means massive slowdowns.  
+Don't use more processes than cores, and you'll have to try not to stomp on each others' toes again.
+\item In figures \ref{fig:InitialState} through \ref{fig:FinalState}, the particles are painted by their owning rank and shadowed particles are painted grey.  
+You do not have to paint your shadow particles grey in your movies.
+\item To debug what's happening, it's often nice to be able to draw all of the particles that are on a given rank.  
+You can do this by running ``python generateMini2dMDPlots\_NeedToKnow\_Debug.py numberOfProcesses rank''.
+You can then make a movie of that one rank's particles by running ``sh MakeMovie\_Debug.sh numberOfProcesses rank''.  
+An example movie is \href{http://youtu.be/ci3r1LRTGIM}{here}.  
+The format of the output file from which this movie is made is ``x y tag'' for each particle.  
+Right now, the tags are all zero because there are no such things as shadow particles in the provided code, and all particles with tag 0 are drawn in the rank's color.  
+If you change the tag of a particle to 1 or 2 in the output file, it will be drawn in pink or grey, respectively.  
+For example, in the linked movie, particles that we're shadowing to other processes are drawn pink and particles that are being shadowed to this process are drawn in grey.  
+\item If your particles are \href{https://www.youtube.com/watch?v=a1Y73sPHKxw}{doing questionable things}, you might find it helpful to increase the number of output files until there is one output file per timestep so that you can see as things start blowing up.
+\end{itemize}
+
+\Figure{ShadowRegions}{Domain Decomposition and Shadowing}{4}
+
+\vfill
+
+
+
+
+
+
+\eprob{20}{The Real World}
+
+You knew this was coming: answer your technically-adept (they've taken 70, but not 105 or HPC) friend's question ``how do I make my code go fast?'' 
+Starting from single-threaded code that uses scalar registers (there is parallelism in single-threaded, scalar code!) and progressing through the class material up to and including message-passing, talk about how to write code that goes fast, what type of parallelism is possible at each stage, how it's leveraged by the programmer, and what potential speedups are possible.
+
+\ifSolutions
+\textbf{Solution:}
+
+\fi
+
+
+
+
+
+
+
+
+
+\eprob{5}{Course Feedback}
+
+I know that you have already given me very useful (and kind!) feedback. 
+The card was so awesome, I really appreciate it.
+You were so sneaky.
+
+Can I ask you for one last thing?  
+Please fill out the course evaluation found \href{https://docs.google.com/forms/d/1GQPXWXIaeSpAorp_yfRW67a9MHQm94YfMsRpc47LhD0/viewform?usp=send_form}{here}, in which I ask about which technical topics of the class you liked and things like that.
+
+\eprob{5}{Feedback}
+
+\begin{enumerate}[a)]
+\item How much total time did you spend on this assignment?
+\item Of the total time, how much total time did you spend ``flailing'' on little annoying things that are not the main point of the assignment?
+\item Of the total time, how much total time did you spend on the ``Need to Know'' implementation?
+\item Did you have any ``aha'' moments where something \href{https://www.youtube.com/watch?v=oHg5SJYRHA0}{clicked}?  If so, on what problems or parts?
+\item Can you give me any feedback on this assignment?
+\end{enumerate}
+
+\vfill
+
+\vskip 1cm
+\total
+
+\end{document}
+
+todo: perform handwriting analysis on student evaluations and prepare grade change forms
