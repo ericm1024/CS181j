@@ -129,6 +129,12 @@ int main(int argc, char* argv[]) {
                 1, MPI_UNSIGNED, MPI_SUM, MPI_COMM_WORLD);
   printf("starting with %u total positions\n",
          totalNumberOfOwnedAtomsAcrossTheSimulation);
+  if (totalNumberOfOwnedAtomsAcrossTheSimulation != globalNumberOfPoints) {
+    throwException("Somehow we don't have the right number of owned points "
+                   "across the entire simulation: %u instead of %u\n",
+                   totalNumberOfOwnedAtomsAcrossTheSimulation,
+                   globalNumberOfPoints);
+  }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   // ************************* </Initial Condition> ****************************
   // ===========================================================================
