@@ -7,4 +7,4 @@ if [ $# -lt 2 ]; then
 fi
 
 numberOfProcesses=$(printf '_%03d' $2)
-ffmpeg -r 25 -f image2 -i figures/Mini2dMD_$1${numberOfProcesses}_%05d.jpg -qscale 0 -vcodec mpeg4 Mini2dMD_$1$numberOfProcesses.mp4
+avconv -r 25 -f image2 -i figures/Mini2dMD_$1${numberOfProcesses}_%05d.jpg -qscale 0 -vcodec mpeg4 Mini2dMD_$1$numberOfProcesses.mp4
