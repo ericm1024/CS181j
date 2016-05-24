@@ -19,10 +19,18 @@ multiplyColMajorByRowMajorMatrices(const unsigned int matrixSize,
                                    const vector<double> & rowMajorRightMatrix,
                                    vector<double> * rowMajorResultMatrix_pointer) {
 
-  vector<double> & rowMajorResultMatrix = *rowMajorResultMatrix_pointer;
+        vector<double> & rowMajorResultMatrix = *rowMajorResultMatrix_pointer;
 
-  // TODO
-
+        for (unsigned int row = 0; row < matrixSize; ++row) {
+                for (unsigned int col = 0; col < matrixSize; ++col) {
+                        rowMajorResultMatrix[row * matrixSize + col] = 0;
+                        for (unsigned int k = 0; k < matrixSize; ++k) {
+                                rowMajorResultMatrix[row * matrixSize + col]
+                                        += colMajorLeftMatrix[row + k * matrixSize]
+                                        * rowMajorRightMatrix[k * matrixSize + col];
+                        }
+                }
+        }
 }
 
 void
@@ -31,9 +39,18 @@ multiplyRowMajorByColMajorMatrices(const unsigned int matrixSize,
                                    const vector<double> & colMajorRightMatrix,
                                    vector<double> * rowMajorResultMatrix_pointer) {
 
-  vector<double> & rowMajorResultMatrix = *rowMajorResultMatrix_pointer;
+        vector<double> & rowMajorResultMatrix = *rowMajorResultMatrix_pointer;
 
-  // TODO
+        for (unsigned int row = 0; row < matrixSize; ++row) {
+                for (unsigned int col = 0; col < matrixSize; ++col) {
+                        rowMajorResultMatrix[row * matrixSize + col] = 0;
+                        for (unsigned int k = 0; k < matrixSize; ++k) {
+                                rowMajorResultMatrix[row * matrixSize + col]
+                                        += rowMajorLeftMatrix[row * matrixSize + k]
+                                        * colMajorRightMatrix[k + col * matrixSize];
+                        }
+                }
+        }
 
 }
 
@@ -43,10 +60,18 @@ multiplyRowMajorByColMajorMatrices_improved(const unsigned int matrixSize,
                                             const vector<double> & colMajorRightMatrix,
                                             vector<double> * rowMajorResultMatrix_pointer) {
 
-  vector<double> & rowMajorResultMatrix = *rowMajorResultMatrix_pointer;
+        vector<double> & rowMajorResultMatrix = *rowMajorResultMatrix_pointer;
 
-  // TODO
-
+        for (unsigned int row = 0; row < matrixSize; ++row) {
+                for (unsigned int col = 0; col < matrixSize; ++col) {
+                        double tmp = 0;
+                        for (unsigned int k = 0; k < matrixSize; ++k) {
+                                tmp += rowMajorLeftMatrix[row * matrixSize + k]
+                                        * colMajorRightMatrix[k + col * matrixSize];
+                        }
+                        rowMajorResultMatrix[row * matrixSize + col] = tmp;
+                }
+        }
 }
 
 }
