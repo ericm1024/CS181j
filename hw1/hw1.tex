@@ -340,28 +340,28 @@ Let's explore the efficacy of this transformation.  As usual, we'll suppose that
 Note: To be clear, the type of answer I'm looking for is ``around $\tfrac{14 n^5}{17}$'', with justification and associated calculations, of course.
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} Recall that HPC cache has 16 numbers per cache line. We perform $2n^2$ loads from \texttt{input_i}, $n/16$ of which will be misses and $2n^2$ loads from \texttt{input_j}, $n^2/16$ of which will be misses (the cache is not large enough to store \texttt{input_j}, so we will never hit a cache line after we walk past the end of it and before it is evicted). We also perform $2n^2$ loads from each of the matrices, which adds another $2n^2/16$ misses. Thus in total we have $3n^2/16 + n/16$ cache misses with this version.
 
 \fi
 
 \item For the first version (all in the same loop), how many cache misses do you expect during the entire calculation if \texttt{f12} and \texttt{f21} are stored in column-major order?
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} If the matrices are in column-major order every load from them at the beginning of the loop will be a miss, so we end up with $2n^2$ misses on matrix loads instead of $2n^2/16$. Thus we have $33n^2/16 + n/16$ misses.
 
 \fi
 
-\item For the second version (fissioned loops), how many cache misses do you expect during the entire calculation if \texttt{f12} and \texttt{f21} are stored in row-major order?  
+\item For the second version (fissioned loops), how many cache misses do you expect during the entire calculation if \texttt{f12} and \texttt{f21} are stored in row-major order?
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} Each of the first 2 loops generate $n^2/16$ cache misses in the matrix, $n/16$ cache misses in the first vector and $n^2/16$ cache misses in the second vector. The final loop generates another $2n^2/16$ cache misses in the matrices. Thus we end up with $n^2/4 + n/16$ cache misses, which is worse.
 
 \fi
 
 \item For the second version (fissioned loops), how many cache misses do you expect during the entire calculation if \texttt{f12} and \texttt{f21} are stored in column-major order?  
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} If the matrices are in column-major order then every matrix load is a cache miss, so each of the first 2 loops generates $17n^2/16 + n/16$ cache misses and the last loop generates $2n^2$ cache misses for a total of $49n^2/16 + n/16$ cache misses. Ouch.
 
 \fi
 
