@@ -65,10 +65,39 @@ multiplyRowMajorByColMajorMatrices_improved(const unsigned int matrixSize,
         for (unsigned int row = 0; row < matrixSize; ++row) {
                 for (unsigned int col = 0; col < matrixSize; ++col) {
                         double tmp = 0;
-                        for (unsigned int k = 0; k < matrixSize; ++k) {
+                        unsigned k = 0;
+                        for (; k+3 < matrixSize;) {
                                 tmp += rowMajorLeftMatrix[row * matrixSize + k]
                                         * colMajorRightMatrix[k + col * matrixSize];
+                                ++k;
+                                tmp += rowMajorLeftMatrix[row * matrixSize + k]
+                                        * colMajorRightMatrix[k + col * matrixSize];
+                                ++k;
+                                tmp += rowMajorLeftMatrix[row * matrixSize + k]
+                                        * colMajorRightMatrix[k + col * matrixSize];
+                                ++k;
+                                tmp += rowMajorLeftMatrix[row * matrixSize + k]
+                                        * colMajorRightMatrix[k + col * matrixSize];
+                                ++k;
                         }
+
+                        switch ((matrixSize - k) & 3) {
+                        case 3:
+                                tmp += rowMajorLeftMatrix[row * matrixSize + k]
+                                        * colMajorRightMatrix[k + col * matrixSize];
+                                ++k;
+                        case 2:
+                                tmp += rowMajorLeftMatrix[row * matrixSize + k]
+                                        * colMajorRightMatrix[k + col * matrixSize];
+                                ++k;
+                        case 1:
+                                tmp += rowMajorLeftMatrix[row * matrixSize + k]
+                                        * colMajorRightMatrix[k + col * matrixSize];
+                                ++k;
+                        case 0:
+                                break;
+                        }
+
                         rowMajorResultMatrix[row * matrixSize + col] = tmp;
                 }
         }

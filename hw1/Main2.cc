@@ -4,6 +4,8 @@
 // This is an exercise in measuring runtime and cache misses of an example
 //  problem of matrix multiplication.
 
+#include <functional>
+
 // Many of the homework assignments have definitions and includes that
 //  are common across several executables, so we group them together.
 #include "CommonDefinitions.h"
@@ -22,8 +24,9 @@ using std::vector;
 using std::string;
 using std::array;
 
-// All the magic for measuring cache misses is in papi.
-#include <papi.h>
+#include "../papi_tools.hpp"
+
+using namespace papi_tools;
 
 // A very thin wrapper around PAPI_strerror.
 void
@@ -112,7 +115,7 @@ int main() {
   // *************************** < Papi initialization> ************************
   // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
-  // TODO: initialize papi
+  papi_event_set<PAPI_L1_DCM> event_set;
 
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   // *************************** </Papi initialization> ************************
@@ -179,142 +182,68 @@ int main() {
         rowMajorRightMatrix[row * matrixSize + col] = rightRandomNumber;
       }
     }
-    vector<double> rowMajorResultMatrix(numberOfEntries);
 
     // Write out some information for this size.
     fprintf(file, "%6u, %10.6e, %10.6e", matrixSize, double(numberOfRepeats),
             analyticFlopsForThisSize);
 
-    double minElapsedTime = std::numeric_limits<double>::max();
-    // TODO: use this variable like minElapsedTime to record and
-    //  output the number of cache misses.
-    long long minNumberOfLevel1CacheMisses =
-      std::numeric_limits<long long>::max();
+    vector<double> correctRowMajorResultMatrix;
+    
+    const auto test_one = [&](const auto& fn, const char *name) {
+            vector<double> rowMajorResultMatrix(numberOfEntries);
+            double minElapsedTime = std::numeric_limits<double>::max();
+            long long minNumberOfLevel1CacheMisses = std::numeric_limits<long long>::max();
 
-    // Now we'll actually do the colRow multiplications.
-    // For each repeat
-    for (unsigned int repeatNumber = 0;
-         repeatNumber < numberOfRepeats; ++repeatNumber) {
+            // Set one value, to trigger the correctness test if nothing is implemented.
+            rowMajorResultMatrix[0] = 1.;
+            
+            // Now we'll actually do the colRow multiplications.
+            // For each repeat
+            for (unsigned int repeatNumber = 0;
+                 repeatNumber < numberOfRepeats; ++repeatNumber) {
 
-      // Clear the cache
-      Utilities::clearCpuCache();
+                    // Clear the cache
+                    Utilities::clearCpuCache();
 
-      // Start measuring
-      const high_resolution_clock::time_point tic = high_resolution_clock::now();
+                    // Start measuring
+                    const high_resolution_clock::time_point tic = high_resolution_clock::now();
 
-      Main2::multiplyColMajorByRowMajorMatrices(matrixSize,
-                                                colMajorLeftMatrix,
-                                                rowMajorRightMatrix,
-                                                &rowMajorResultMatrix);
+                    {
+                            const auto c_ = event_set.scoped_counter();
+                            fn(&rowMajorResultMatrix);
+                    }
 
-      // Stop measuring
-      const high_resolution_clock::time_point toc = high_resolution_clock::now();
-      const double thisRepeatsElapsedTime =
-        duration_cast<duration<double> >(toc - tic).count();
-      minElapsedTime = std::min(minElapsedTime, thisRepeatsElapsedTime);
+                    // Stop measuring
+                    const high_resolution_clock::time_point toc = high_resolution_clock::now();
+                    const double thisRepeatsElapsedTime =
+                            duration_cast<duration<double> >(toc - tic).count();
+                    minElapsedTime = std::min(minElapsedTime, thisRepeatsElapsedTime);
+                    minNumberOfLevel1CacheMisses = std::min(minNumberOfLevel1CacheMisses,
+                                                            event_set.get_count<PAPI_L1_DCM>());
+            }
 
-    }
-    // Store the "right" result to compare with all others
-    const vector<double> correctRowMajorResultMatrix =
-      rowMajorResultMatrix;
-    // Write output
-    fprintf(file, ", %10.6e, %10.6e",
-            double(minNumberOfLevel1CacheMisses),
-            minElapsedTime);
+            // Store the "right" result to compare with all others
+            if (string(name) == string("colRow")) // ew
+                    correctRowMajorResultMatrix = rowMajorResultMatrix;
+            else
+                    checkResult(correctRowMajorResultMatrix, rowMajorResultMatrix,
+                                absoluteErrorTolerance, string(name));
 
+            // Write output
+            fprintf(file, ", %10.6e, %10.6e", double(minNumberOfLevel1CacheMisses), minElapsedTime);
+    };
 
+    using namespace std::placeholders;
 
-    // Reset the result
-    std::fill(rowMajorResultMatrix.begin(), rowMajorResultMatrix.end(),
-              std::numeric_limits<double>::quiet_NaN());
-    // Set one value, to trigger the correctness test if nothing is implemented.
-    rowMajorResultMatrix[0] = 1.;
-    // Reset the counters
-    minElapsedTime = std::numeric_limits<double>::max();
-    minNumberOfLevel1CacheMisses =
-      std::numeric_limits<long long>::max();
-
-
-
-    // Now we'll do the rowCol multiplications
-    for (unsigned int repeatNumber = 0;
-         repeatNumber < numberOfRepeats; ++repeatNumber) {
-
-      // Clear the cache
-      Utilities::clearCpuCache();
-
-      // Start measuring
-      const high_resolution_clock::time_point tic = high_resolution_clock::now();
-
-      Main2::multiplyRowMajorByColMajorMatrices(matrixSize,
-                                                rowMajorLeftMatrix,
-                                                colMajorRightMatrix,
-                                                &rowMajorResultMatrix);
-
-      // Stop measuring
-      const high_resolution_clock::time_point toc = high_resolution_clock::now();
-      const double thisRepeatsElapsedTime =
-        duration_cast<duration<double> >(toc - tic).count();
-      minElapsedTime = std::min(minElapsedTime, thisRepeatsElapsedTime);
-
-    }
-    // Check the result
-    checkResult(correctRowMajorResultMatrix,
-                rowMajorResultMatrix,
-                absoluteErrorTolerance,
-                string("rowCol"));
-    // Write output
-    fprintf(file, ", %10.6e, %10.6e",
-            double(minNumberOfLevel1CacheMisses),
-            minElapsedTime);
-
-
-
-    // Reset the result
-    std::fill(rowMajorResultMatrix.begin(), rowMajorResultMatrix.end(),
-              std::numeric_limits<double>::quiet_NaN());
-    // Set one value, to trigger the correctness test if nothing is implemented.
-    rowMajorResultMatrix[0] = 1.;
-    // Reset the counters
-    minElapsedTime = std::numeric_limits<double>::max();
-    minNumberOfLevel1CacheMisses =
-      std::numeric_limits<long long>::max();
-
-
-
-    // Now we'll do the improved rowCol multiplications
-    for (unsigned int repeatNumber = 0;
-         repeatNumber < numberOfRepeats; ++repeatNumber) {
-
-      // Clear the cache
-      Utilities::clearCpuCache();
-
-      // Start measuring
-      const high_resolution_clock::time_point tic = high_resolution_clock::now();
-
-      Main2::multiplyRowMajorByColMajorMatrices_improved(matrixSize,
-                                                         rowMajorLeftMatrix,
-                                                         colMajorRightMatrix,
-                                                         &rowMajorResultMatrix);
-
-      // Stop measuring
-      const high_resolution_clock::time_point toc = high_resolution_clock::now();
-      const double thisRepeatsElapsedTime =
-        duration_cast<duration<double> >(toc - tic).count();
-      minElapsedTime = std::min(minElapsedTime, thisRepeatsElapsedTime);
-
-    }
-    // Check the result
-    checkResult(correctRowMajorResultMatrix,
-                rowMajorResultMatrix,
-                absoluteErrorTolerance,
-                string("improved rowCol"));
-    // Write output
-    fprintf(file, ", %10.6e, %10.6e",
-            double(minNumberOfLevel1CacheMisses),
-            minElapsedTime);
-
-
+    test_one(std::bind(Main2::multiplyColMajorByRowMajorMatrices,
+                       matrixSize, colMajorLeftMatrix, rowMajorRightMatrix, _1),
+             "colRow");
+    test_one(std::bind(Main2::multiplyRowMajorByColMajorMatrices,
+                       matrixSize, rowMajorLeftMatrix, colMajorRightMatrix, _1),
+             "rowCol");
+    test_one(std::bind(Main2::multiplyRowMajorByColMajorMatrices_improved,
+                       matrixSize, rowMajorLeftMatrix, colMajorRightMatrix, _1),
+             "improved");
 
     // Output a heartbeat message
     const high_resolution_clock::time_point toc = high_resolution_clock::now();
@@ -328,8 +257,6 @@ int main() {
     fflush(file);
   }
   fclose(file);
-
-  // TODO: Clean up papi
 
   return 0;
 }

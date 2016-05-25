@@ -20,56 +20,56 @@ Whenever you start working on a computer, it's important to get an idea of what 
 \item First, it's important to know what processor \texttt{shuffler} has.  To do this, you can open the file \texttt{/proc/cpuinfo} in an editor or just \texttt{cat} it to the terminal ``\texttt{cat /proc/cpuinfo}''.  What is the processor model number?  (don't forgot the ``v2'' part!)
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} The CPU on \texttt{shuffler} is an \texttt{Intel Xeon E5-2620 v2}.
 
 \fi
 
 \item Google the model number and find a page on the \texttt{ark.intel.com} site for the processor.  How many cores does this processor have?
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} The CPU has 6 physical cores and 12 logical cores (hyperthreads).
 
 \fi
 
 \item In \texttt{/proc/cpuinfo}, it will list more ``processors'' than the number of cores Intel claims.  Using the word ``processor'' here is a terrible abuse of nomenclature - what they really mean is ``thing on which I can schedule threads''.  The reason why this is not the same as the number of cores you see online is for two reasons: one is hyperthreading and the other is that we actually have more than one of these processors plugged into \texttt{shuffler's} motherboard.  To eliminate the effect of hyperthreading, divide the number of ``things on which I can schedule threads'' you find in \texttt{/proc/cpuinfo} by 2, which gives you how many total, actual, physical cores there are on \texttt{shuffler}.  Given that number and the number of cores on a single processor that Intel claims on the website, how many copies of this processor must we have plugged into \texttt{shuffler}?
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} \texttt{shuffler} has 2 CPU packages.
 
 \fi
 
 \item Intel's marketing page is full of, well, marketing, but it doesn't tell you some important things about the cache structure.  You can get some of this information from the utility \texttt{getconf}.  Enter ``\texttt{getconf LEVEL1\_CACHE\_SIZE}'' in your terminal.  Unfortunately, this will give you an error because the level 1 cache is actually split into two sections: a data cache and an instruction cache.  What is the size (in kilobytes) of the level 1 data cache? (``\texttt{getconf LEVEL1\_DCACHE\_SIZE}'')
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} The L1 data cache is 32768 bytes (32 KB).
 
 \fi
 
 \item What is the size of the level 1 instruction cache? (``\texttt{getconf LEVEL1\_ICACHE\_SIZE}'')
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} The L1 instruction cache is also 32768 bytes (32 KB).
 
 \fi
 
 \item What is the size of the level 2 cache? (``\texttt{getconf LEVEL2\_CACHE\_SIZE}'')
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} The L2 cache is 262144 bytes (256 KB).
 
 \fi
 
 \item What is the size of the level 3 cache? (``\texttt{getconf LEVEL3\_CACHE\_SIZE}'')
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} The L3 cache is 15728640 bytes (15 MB).
 
 \fi
 
 \item Now we'll look at cache line sizes.  What is the size of the cache lines of each cache we measured above?  (You can get the line size with ``\texttt{getconf someCacheName\_LINESIZE}'' like ``\texttt{getconf LEVEL2\_CACHE\_LINESIZE}'');
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} All of the caches we just looked at have 64 byte cache lines.
 
 \fi
 
@@ -78,7 +78,7 @@ Whenever you start working on a computer, it's important to get an idea of what 
 \ifSolutions
 \textbf{Solution:}
 
-\fi
+\fi \texttt{shuffler} has 65941424 KB of memory, or about 63 GB.
 
 \end{enumerate}
 
@@ -121,14 +121,14 @@ You should generate plots using the provided \texttt{generatePlots2.py}.  The ex
 \noindent Though the majorness of the result matrix does affect our timing, just use row-major storage for the result matrix so that everyone's on the same page.  Note that the provided implementation already makes sure that the answers you get are consistent across all methods; don't disable this error checking if you're having incorrect values.
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} TODO: Not sure what to write here? Should the code go inline?
 
 \fi
 
 \item Implement a version of the naive rowMajor * columnMajor method (``improved rowCol'') that incorporates ideas discussed in class for improving the summation. Predict the relationship between the number of flops per cache miss for the ``improved rowCol'' version and the number of flops per cache miss of the rowCol and colRow versions.  This implementation also goes into \texttt{Main2\_functions.h}.
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} I implemented 4x loop unrolling. I don't expect flops per cache miss to be any better, but I do expect performance to be faster because the loop conditional is evaluated fewer times.
 
 \fi
 
@@ -138,10 +138,14 @@ Run the executable and the post processing script, which will exercise the three
 
 Note: The code doesn't measure floating point operations, it just uses the analytic solution that the number of flops performed for a matrix multiplication for matrices of size $n$ is $2n^3$.
 
-\ifSolutions
+\ifSolutions 
 \textbf{Solution:}
 
 \Figure{figures/Main2_FlopsRate_shuffler}{Achieved Flops rate versus Matrix Size}{4}
+
+This plot tells us that cache-friendly multiplication achieves a much higher flops rate than non-cache friendly multiplication, particularly once the working set does not fit into L2 cache. Our L1 data cache is 32KB, a \texttt{double} takes up 8 bytes, and we are working on 3 matrices at once, so the problem no longer fits in L1 cache when the matrix dimension exceeds $\sqrt{32KB/24} \approx 36$. Similarly the problem no longer fits in our 256KB L2 cache when the dimension exceeds 104. The performance of the cache-unfriendly algorithm falls off after a size of 100, so we reasonably conclude that most of the loads are getting serviced by L3 cache at that point.
+
+I find the hump in the improved cache-friendly algorithm's curve interesting. I'm not really sure what to make of it. It's worh noting that the flops rate peaks a little after the problem spills out of L1 cache and then reaches a steady state once the problem spills out of L2 cache.
 
 \fi
 
@@ -161,12 +165,16 @@ Note: The code doesn't measure floating point operations, it just uses the analy
 
 \Figure{figures/Main2_FlopsPerCacheMiss_shuffler}{Number of Cache Misses versus Matrix Size}{4}
 
+My prediction was on point. The flops per cache miss for the improved cache-friendly algorithm are exactly the same as that of the normal cache-friendly algorithm.
+
 \fi
 
 \item Do the ``flops per cache miss'' results match our predictions from class?  Is there anything that surprises you?
 
 \ifSolutions
 \textbf{Solution:}
+
+I'm not sure what the predictions from class were, but my plots roughly match the plots on slide 91. I was a little surprised that the cache-friendly algorithms don't seem to fall off in performance at all when the working set spills into L3 cache (width = 104), but the cache-unfriendly algorithm falls off sharply. I would have expected at least a shallow drop off from the cache-friendly algorithms.
 
 \fi
 
@@ -200,7 +208,14 @@ Write a program that achieves the highest flops rate you can get.  You must use 
 \end{itemize}
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} I wrote a program that creates a \texttt{vector<double>} with 32 million elements, fills that vector with random numbers, then loops over the vector and sets each element to the product of the sin of each of the 10 elelements following it, i.e.
+\begin{equation*}
+  v_i = \prod\limits_{j = i}^{i+9} \sin v_j.
+\end{equation*}
+This achieved a flops rate of about 1.4 GFlops. Slide 57 gives us the equation $peakFlopsRate = clockSpeed * vectorRegisterWidth * numberOfCores$, so
+our peak flops rate with one thread and no vectorization is 2.6GFlops (since turbo clock speed is 2.6GHz). I believe this processor has 4-wide vector registers, so the single threaded vectorized floating point performance is $2.6*4 = 10.4$GFlops.\footnote{Though I think it might run at a lower clock speed when executing vector instructions?} Each CPU package has 6 physical cores, for a peak threaded, vectorized flops rate of $2.1*4*6 = 50.4$GFlops (since when all cores are running they won't be at at the turbo speed).\footnote{Do hyperthreads get their own floating point hardware or do they share with their buddy core?}
+
+Thus our flops rate is 54\% of the non-vectorized flops rate and 13\% of the vectorized flops rate.
 
 \fi
 
@@ -230,7 +245,17 @@ Neither of these computers supports out of order execution because they're speci
 \item You've doubled your clock speed, but unfortunately your total runtime is not just a function of clock speed but is also a function of your cache hit rate. What is the minimum cache hit rate for which upgrading from the 2Ghz processor to the 4Ghz processor will result in a 10\% decrease in runtime? What cache hit rate do you need for the processor upgrade to decrease runtime by 20\%? What about 50\%?"
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} Each number takes one memory access to fetch, one multiply to square, and one add to add it to the running total. I think the answer to this question depends on the number of in-flight loads the processor can handle. If we can only have one in-flight load, then the problem is entirely memory bound. We have to wait at least 1ns to get each number, it takes 0.5ns to process each number, and we'll assume multiplies, adds, and loads can happen in parallel, so the processor is always waiting at least one cycle between multiplies waiting for the cache. However, if we can have 2 in-flight loads, we can pipeline them and keep the multiplier busy (assuming all cache hits, which is obviously not the point of the problem, but for arguments sake).
+
+Finally if we can have 400 in flight loads, then even if every load is a cache miss we still have 400 in the pipeline at a time, meaning that the multiplier of either the 4GHz or the 2GHz processor will always be busy regardless of cache hit rate.
+
+I think I'm missing something key here or missing the point of the problem. The problem said ``no out of order execution''; does that include pipelining?
+
+Okay so if we ignore pipelining, then the average run time in nanoseconds to process a single number with a cache hit rate of $H$ is $T = 1\times 10^9/f + H + 100(1 - H)$. So for a 10\% decrease in runtime with the 2GHz to 4Ghz upgrade, we solve
+\begin{align*}
+  0.9\left(\frac{1}{2} + H + 100(1 - H)\right) > \frac{1}{4} + H + 100(1 - H)
+\end{align*}
+Using wolfram because we're lazy computer scientists, we find that H is 0.99. This seems too high to me, because when we plug in 0.8 and 0.5 instead of 0.9 we get $H > 1$, which is impossible, so either my math is wrong (likely), or the problem is trying to show us that no hit rate will yield that much of a speedup (plausable, but unikely). Either way I have no idea what's going on in this problem.
 
 \fi
 
@@ -238,6 +263,8 @@ Neither of these computers supports out of order execution because they're speci
 
 \ifSolutions
 \textbf{Solution:}
+
+Not goint to try this until I figure out the previous part.
 
 \fi
 
@@ -356,35 +383,36 @@ Provide short (but sufficient) answers to the following prompts:
 \item Explain as you would to a ``non-technical'' friend of yours (who knows essentially nothing about computer architecture) the major components of a computer, how they are related and interact.
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} You can think of a computer as your brain. Your brain is like the computer's CPU and cache: it does all the thinking and it's pretty quick, but it doesn't know everything: it only stores important information that you'll use frequently, just like a CPUs cache. Any books you have in your house are like the computer's RAM. If you want to know something that you can't remember, you can go find it in a book, but it's going to take a little longer. Finally, books at the local library are like a computer's hard drive: they take much longer to get to and find the information you're looking for, but they're a lot more of them with lots more information than your brain or the books in your house.
 
 \fi
 
 \item Explain as you would to a ``non-technical'' friend of yours (who knows essentially nothing about computer architecture) why people care about counting cache misses.  
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} Expounding on the previous analogy, a cache miss is when you can't remember something so you have to go look it up, which takes much longer. If you had to look everything up when you were working on homework, it would take forever, which is why we remember important things, and why CPUs keep important things in their caches.
 
 \fi
 
 \item In a recent technical presentation I saw, someone described how they ran their production research code on several different machines without changing the code at all and achieved flops rates that were from $2\%$ to $10\%$ of peak.  Ignoring differences in operating system, what difference might there be from one computer to the next that would lead to this behavior?  
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} If they truly didn't recompile their code, then it probably wansn't fully optimized by the compiler to take advantage of each computer's vector registers and instruction set extensions. Thus there could be one computer with a much higher theoretical flops rate because it has some fancy instructions or registers, but if the code wasn't compiled to use those registers and instructions then it is going to achieve a relatively lower flops rate relative to the peak rate of that machine.
 
 \fi
 
 \item How would you answer a lab-mate who asks you ``What determines how fast my (single-threaded) code goes?''
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} Black magic and the gods of branch prediction, pre-fetching, scheduling, and caching.
 
+On a more realistic note, the cache hit rate (cache friendlyness) of the code, the peak flops rate of the hardware, and how well the code uses the hardware avalible are decent indicators for how fast some code will go.
 \fi
 
-\item Now that you've seen how to use \texttt{PAPI}, if someone were to give you the source code of a random program, what would you do to get a rough idea of how ``highly performing it is?
+\item Now that you've seen how to use \texttt{PAPI}, if someone were to give you the source code of a random program, what would you do to get a rough idea of how ``highly performing'' it is?
 
 \ifSolutions
-\textbf{Solution:}
+\textbf{Solution:} Yes. I could measure cache hit rates and floating point or integer operations per cache miss. 
 
 \fi
 
