@@ -340,7 +340,7 @@ Let's explore the efficacy of this transformation.  As usual, we'll suppose that
 Note: To be clear, the type of answer I'm looking for is ``around $\tfrac{14 n^5}{17}$'', with justification and associated calculations, of course.
 
 \ifSolutions
-\textbf{Solution:} Recall that HPC cache has 16 numbers per cache line. We perform $2n^2$ loads from \texttt{input_i}, $n/16$ of which will be misses and $2n^2$ loads from \texttt{input_j}, $n^2/16$ of which will be misses (the cache is not large enough to store \texttt{input_j}, so we will never hit a cache line after we walk past the end of it and before it is evicted). We also perform $2n^2$ loads from each of the matrices, which adds another $2n^2/16$ misses. Thus in total we have $3n^2/16 + n/16$ cache misses with this version.
+\textbf{Solution:} Recall that HPC cache has 16 numbers per cache line. We perform $2n^2$ loads from \texttt{input\_i}, $n/16$ of which will be misses and $2n^2$ loads from \texttt{input\_j}, $n^2/16$ of which will be misses (the cache is not large enough to store \texttt{input\_j}, so we will never hit a cache line after we walk past the end of it and before it is evicted). We also perform $2n^2$ loads from each of the matrices, which adds another $2n^2/16$ misses. Thus in total we have $3n^2/16 + n/16$ cache misses with this version.
 
 \fi
 
