@@ -40,9 +40,35 @@ If you're having trouble thinking of examples, you could do one of the following
 \end{itemize}
 \vfill
 
+\ifSolutions
+
+\textbf{Solution:}
+\begin{enumerate}[a)]
+\item My probem took a standard amount of effort. I didn't write most of the code I used, but I wrote all of the benchmarking and plotting code, and I think the idea is compelling.
+  
+\item I benchmarked the performance of insertion, iteration, and deletion from a \texttt{std::set} implemented with a B-tree as a function of the number of keys per node. I used a C++ B-tree implementation from Google.\footnote{https://code.google.com/archive/p/cpp-btree/} I tried 1, 16, 32, 64, 128, 256, 512, 1024, 2049, and 4096 keys per node.\footnote{Google's B-tree has an unfortunate feature/bug that prevents the code from working with less than 16 keys per node, so when there is only one key per node we use \texttt{std::set} which is a red-black tree. This is admitedly bit of a hack on my part, but it's an interesting data point.} For each node size I create an empty set, insert one million randomly selected keys, iterate through the entire set in forward order, then erase every element in the set. I record the run time and number of L1 cache misses for each of these operations seperately and perform 5 runs of each test and report the average. I use \texttt{long int} for the key type of the set. All benchmarks were performed on \texttt{shuffler}.
+
+\item My findings are presented below in 4 plots. The first two show the runtime and number of cache misses of each of the 3 operations over varying node sizes. The second two show the same data on a logarithmic y axis to highlight just how fast iteration gets with high node sizes.
+
+  As node size increases, insertion and deletion get faster up to a point, but eventually the CPU cost of moving keys around within nodes dominates and the operations slow down slightly for very large nodes. Iteration gets monotonically faster as node sizes increases as it has to chase fewer pointers and the prefetcher can effectively load keys in the same node before the iterator reaches them.
+
+  It's interesting to note that run time and cache misses exhibit almost exactly the same behavior (i.e. the curves look roughly the same), meaning the problem is mostly memory bound. The major exception to this is insertion and deletion runtime takes a slight dip between 100 and 600 keys per node, while cache misses stay flat in that same region. This is the same range of keys per node in which insertion and deletion perform the fastest, and it indicates some degree of CPU boundedness in that rage.
+
+  It's work noting that Google's implementation defaults to 256 keys per node, which lies in the region of fastest insertion and deletion for our key type and hardware setup. However, in an iteration-heavy workload this may actually be a bad choice. When we look at the logaritmic scale plots (the 3rd and 4th plots), we see that insertion and deletion performance stays within the same order of magnitude as nodes get very large, but iteration increases in performance by several orders of magnitude. Thus large nodes may be appropriate for some use cases.
+  
+  \Figure{figures/Main1_Runtime.pdf}{Run Time versus Node Size}{4}
+  \Figure{figures/Main1_CacheMisses.pdf}{Cache Misses versus Node Size}{4}
+  \Figure{figures/Main1_RuntimeLog.pdf}{Run Time versus Node Size}{4}
+  \Figure{figures/Main1_CacheMissesLog.pdf}{Cache Misses versus Node Size}{4}
+\end{enumerate}
+
+\fi
+
 \newpage
-
-
+\phantom{.}
+\newpage
+\phantom{.}
+\newpage
 
 
 
@@ -91,7 +117,7 @@ The values of \texttt{input[i]} are uniformly distributed through the domain of 
 
 \ifSolutions
 
-\textbf{Solution:}
+\textbf{Solution:} If interpolation and memory access to the look up table take longer than the call to \texttt{function}, then this redesign is bad. This is especailly questionable since flops are basically free in 2016 compared to memory access. Furthermore, if the look up table is large, it may not even fit in cache, which is also bad.
 
 \fi
 
@@ -99,7 +125,7 @@ The values of \texttt{input[i]} are uniformly distributed through the domain of 
 
 \ifSolutions
 
-\textbf{Solution:}
+\textbf{Solution:} If the look up table is very large then it may push the \texttt{junk} array out of L3 cache, which will make the second pass over the junk array much slower. If it's small it shouldn't affect the other things.
 
 \fi
 
@@ -107,7 +133,7 @@ The values of \texttt{input[i]} are uniformly distributed through the domain of 
 
 \ifSolutions
 
-\textbf{Solution:}
+\textbf{Solution:} We could sort the \texttt{input} array and perform each of the \texttt{function(input[i])} calls first, then perform each of the \texttt{function(input[i]/2.1)} calls, and finally each of the \texttt{function(input[i]/4.25)} calls. This would allow us to use the interpolation array in an ascending manner, which might be a little more cache friendly, but it would require ``un-sorting'' the results at the end, which would require a mapping, i.e. another array which may negate any gains.
 
 \fi
 
@@ -169,7 +195,7 @@ Provide short (but sufficient) answers to the following prompts:
 
 \ifSolutions
 
-\textbf{Solution:}
+\textbf{Solution:} This 60\% change used to be from clock speed and IPC increases, which basically any serial code would run faster without doing anything. However in the early 2000's when we hit a clock speed ceiling of about 3.5GHz, CPU designers started finding that 60\% by adding vector registers, sepcialized instructions, and more cores. Thus we can't just re-use old serial code, we have to re-write our code to take advantage of this new hardware, which is very diffucult, so it's much harder to actually realize a 60\% real speedup in execution time. To make matters worse, this 60\% speedup is mostly on the CPU side, and memory is not getting much faster. In order to utilize this 60\% increase in CPU performance we have to keep the CPUs fed with data from memory, which means doing increasingly complicated things to better organize our data to be cache-friendly.
 
 \fi
 
@@ -177,7 +203,7 @@ Provide short (but sufficient) answers to the following prompts:
 
 \ifSolutions
 
-\textbf{Solution:}
+\textbf{Solution:} I'm really having trouble finding a way to explain this one to a non-technical friend.
 
 \fi
 
@@ -185,7 +211,7 @@ Provide short (but sufficient) answers to the following prompts:
 
 \ifSolutions
 
-\textbf{Solution:}
+\textbf{Solution:} The memory footprint of a program is the amount of RAM it uses while running. The size of the memory on the machine is the total amount of RAM avalible to the operating system, to be shared by all running programs. If we say a program is memory-bound we usually mean its performance is bound by memory access time, and an increase in CPU speed will not make run any faster. Memory-bound could also mean that the program's memory footprint is larger than the size of the memory on the machine. The total runtime of a program is how long it takes to execute from start to finish. If a program is memory-bound, this runtime can be decreased by making the program more cache-friendly.
 
 \fi
 

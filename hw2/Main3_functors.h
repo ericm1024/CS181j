@@ -120,22 +120,25 @@ ArrayMemoizedPowerCalculator {
   std::vector<double> _storage;
 
   ArrayMemoizedPowerCalculator(const unsigned int power,
-                               const double memoizationResolution) :
-    _power(power),
-    _memoizationResolution(memoizationResolution) {
-    // TODO: initialize _storage
-  }
+                               const double memoizationResolution)
+          : _power(power),
+            _memoizationResolution(memoizationResolution),
+            _storage(1.0/_memoizationResolution + 1, -1.0)
+        {
+        }
 
   // Sets each element in result to _power of the corresponding element
   //  in input.
   void computePowers(const std::vector<double> & input,
                      std::vector<double> * result) {
-
-    throw std::runtime_error("You haven't yet implemented the array "
-                             "memoized version!");
-
-    // TODO: use array memoization
-
+          for (size_t i = 0; i < input.size(); ++i) {
+                  const auto in = input.at(i);
+                  const size_t midx = in/_memoizationResolution;
+                  if (_storage[midx] != -1.0)
+                          result->at(i) = _storage.at(midx);
+                  else
+                          _storage.at(midx) = result->at(i) = calculatePower(in, _power);
+          }
   }
 };
 

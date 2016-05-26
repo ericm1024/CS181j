@@ -132,4 +132,10 @@ writeMatrixToFile(const std::vector<std::vector<double> > & matrix,
     fflush (stderr);                                            \
   } while (0)
 
+// http://stackoverflow.com/a/22346540/3775803
+constexpr std::size_t operator "" _z(unsigned long long n)
+{
+        return n;
+}
+
 #endif // UTILITIES_H
