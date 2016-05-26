@@ -181,9 +181,9 @@ Figures \ref{fig:ArrayAndMapVsUnMemoized} and \ref{fig:SpeedupOfArrayMemoizedOve
 
 \fi
 
+In general memoization is not useful unless either the power or the duplication rate are reasonably high, which we expect. However I think this is a pretty unfair comparison because \texttt{std::map} doesn't make sense here. \texttt{std::unordered\_set} or some better hash table should be used instead.
 
-
-
+We also learn that array memoization is faster than map memoization in all cases except when duplication rates are very high. This answer seems a little lackluster but I'm not sure what else to add.
 
 
 \eprob{10}{Back to the Real World}
