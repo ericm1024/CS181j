@@ -107,26 +107,47 @@ struct MatrixMultiplier_RowMajorByColMajor_Improved {
 
 // STUDENTS: THIS IS THE STRUCT YOU HAVE TO MODIFY.
 struct MatrixMultiplier_RowMajorByRowMajor_Tiled {
-  const unsigned int _matrixSize;
-  const unsigned int _tileSize;
+        const unsigned int _matrixSize;
+        const unsigned int _tileSize;
 
-  MatrixMultiplier_RowMajorByRowMajor_Tiled(const unsigned int matrixSize,
-                                            const unsigned int tileSize) :
-    _matrixSize(matrixSize), _tileSize(tileSize) {
-    // TODO: do you need to store or calculate more stuff?
-  }
+        MatrixMultiplier_RowMajorByRowMajor_Tiled(const unsigned int matrixSize,
+                                                  const unsigned int tileSize) :
+                _matrixSize(matrixSize), _tileSize(tileSize) {
+                // TODO: do you need to store or calculate more stuff?
+        }
 
-  void multiplyMatrices(const std::vector<double> & rowMajorLeftMatrix,
-                        const std::vector<double> & rowMajorRightMatrix,
-                        std::vector<double> * rowMajorResultMatrix_pointer) const {
+        void multiplyMatrices(const std::vector<double> & left,
+                              const std::vector<double> & right,
+                              std::vector<double> * rowMajorResultMatrix_pointer) const {
 
-    std::vector<double> & rowMajorResultMatrix = *rowMajorResultMatrix_pointer;
+                auto& res = *rowMajorResultMatrix_pointer;
 
-    // TODO: write the tiled matrix multiplication algorithm
-    throw std::runtime_error("You haven't yet implemented the tiled "
-                             "multiplication version!");
+                // XXX: avoid this?
+                std::fill(res.begin(), res.end(), 0);
 
-  }
+                const auto idx = [=](const auto row, const auto col) {
+                        return row * _matrixSize + col;
+                };
+
+                const auto multiply_accum_tiles = [&](const auto r_0,
+                                                      const auto c_0,
+                                                      const auto k_0) {
+                        for (auto r = 0u; r < _tileSize; ++r)
+                                for (auto c = 0u; c < _tileSize; ++c) {
+                                        auto accum = res[idx(r_0 + r, c_0 + c)];
+                                        for (auto k = 0u; k < _tileSize; ++k)
+                                                // lol
+                                                accum += left[idx(r_0 + r, k_0 + k)]
+                                                        * right[idx(k_0 + k, c_0 + c)];
+                                        res[idx(r_0 + r, c_0 + c)] = accum;
+                                }
+                };
+
+                for (auto r = 0u; r < _matrixSize; r += _tileSize)
+                        for (auto c = 0u; c < _matrixSize; c += _tileSize)
+                                for (auto k = 0u; k < _matrixSize; k += _tileSize)
+                                        multiply_accum_tiles(r, c, k);
+        }
 };
 
 #endif // MAIN1_FUNCTORS_H

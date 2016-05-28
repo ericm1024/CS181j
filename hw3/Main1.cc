@@ -159,8 +159,8 @@ int main() {
   //  (such that it works on matrices that are not just multiples of
   //  the tile size) or not, and this option controls whether you make
   //  matrices that are a multiple of the tile size.
-  const MatrixSizeStyle matrixSizeStyle = MatrixSizesAreArbitrary;
-  //const MatrixSizeStyle matrixSizeStyle = MatrixSizesAreMultiplesOfTheTileSize;
+  //const MatrixSizeStyle matrixSizeStyle = MatrixSizesAreArbitrary;
+  const MatrixSizeStyle matrixSizeStyle = MatrixSizesAreMultiplesOfTheTileSize;
   // This hold the different tile sizes to be tested.
   const vector<unsigned int> tileSizes = {12, 25, 75, 100};
 
@@ -372,7 +372,7 @@ int main() {
       const unsigned int tiledMatrixSize =
         (matrixSizeStyle == MatrixSizesAreArbitrary) ?
         matrixSize :
-        tileSize * std::max(unsigned(1),
+        tileSize * std::max(unsigned(1), 
                             unsigned(std::round(matrixSize / float(tileSize))));
       // Write output
       fprintf(file, ", %3u, %4u", tileSize, tiledMatrixSize);
