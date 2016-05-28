@@ -15,9 +15,6 @@
 // special include file for SIMD commands
 #include <immintrin.h>
 
-// header file for openmp
-#include <omp.h>
-
 void
 computeTaylorExponential_scalar(const unsigned int size,
                                 const float * const x,
