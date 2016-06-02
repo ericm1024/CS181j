@@ -40,11 +40,36 @@ unsigned int
 findIndexOfClosestPoint_threaded(const unsigned int numberOfThreads,
                                  const std::vector<Point> & points,
                                  const Point & searchLocation) {
-  omp_set_num_threads(numberOfThreads);
+        omp_set_num_threads(numberOfThreads);
 
-  // TODO: make a threaded version
-  throw std::runtime_error("threaded version not yet implemented");
+        const unsigned int numberOfPoints = points.size();
 
+        unsigned int midx = 0;
+        double min_dist = squaredMagnitude(points[midx] - searchLocation);
+
+#pragma omp parallel shared(midx, min_dist)
+        {
+                auto this_thread_midx = midx;
+                auto this_thread_min_dist = min_dist;
+
+#pragma omp for
+                for (auto i = 0u; i < numberOfPoints; ++i) {
+                        const double squaredMagnitudeToThisPoint =
+                                squaredMagnitude(points[i] - searchLocation);
+                        if (squaredMagnitudeToThisPoint < this_thread_min_dist) {
+                                this_thread_midx = i;
+                                this_thread_min_dist = squaredMagnitudeToThisPoint;
+                        }
+                }
+
+#pragma omp critical
+                if (this_thread_min_dist < min_dist) {
+                        min_dist = this_thread_min_dist;
+                        midx = this_thread_midx;
+                }
+        }
+
+        return midx;
 }
 
 #endif // FIND_INDEX_OF_CLOSEST_POINT_FUNCTIONS_H

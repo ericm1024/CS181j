@@ -94,26 +94,73 @@ ThreadedClusterer {
   std::vector<Point> _nextCentroids;
   std::vector<unsigned int> _nextCentroidCounts;
 
-  ThreadedClusterer(const unsigned int numberOfCentroids) :
-    _centroids(numberOfCentroids),
-    _nextCentroids(numberOfCentroids),
-    _nextCentroidCounts(numberOfCentroids) {
-  }
+        ThreadedClusterer(const unsigned int numberOfCentroids) :
+                _centroids(numberOfCentroids),
+                _nextCentroids(numberOfCentroids),
+                _nextCentroidCounts(numberOfCentroids) {
+        }
 
-  void
-  calculateClusterCentroids(const unsigned int numberOfThreads,
-                            const unsigned int numberOfIterations,
-                            const std::vector<Point> & points,
-                            const std::vector<Point> & startingCentroids,
-                            std::vector<Point> * finalCentroids) {
+        void
+        calculateClusterCentroids(const unsigned int numberOfThreads,
+                                  const unsigned int numberOfIterations,
+                                  const std::vector<Point> & points,
+                                  const std::vector<Point> & startingCentroids,
+                                  std::vector<Point> * finalCentroids) {
+                
+                omp_set_num_threads(numberOfThreads);
+                
+                const unsigned int numberOfPoints = points.size();
+                const unsigned int numberOfCentroids = startingCentroids.size();
+          
+                _centroids = startingCentroids;
+                
+                // Start with values of 0 for the next centroids
+                std::fill(_nextCentroids.begin(), _nextCentroids.end(), (Point) {{0., 0., 0.}});
+                std::fill(_nextCentroidCounts.begin(), _nextCentroidCounts.end(), 0);
 
-    omp_set_num_threads(numberOfThreads);
+                #pragma omp parallel
+                for (auto n = 0u; n < numberOfIterations; ++n) {
 
-    // TODO: make a threaded version
-    throw std::runtime_error("threaded version not yet implemented");
+                        #pragma omp for
+                        // Calculate next centroids
+                        for (auto i = 0u; i < numberOfPoints; ++i) {
+                                const auto& point = points[i];
 
-  }
+                                unsigned int closest_idx = 0;
+                                double closest_dist = squaredMagnitude(point - _centroids[0]);
 
+                                // For each centroid after the first
+                                for (auto j = 1u; j < numberOfCentroids; ++j) {
+                                        const double squaredDistanceToThisCentroid =
+                                                squaredMagnitude(point - _centroids[j]);
+
+                                        // If we're closer, change the closest one
+                                        if (squaredDistanceToThisCentroid < closest_dist) {
+                                                closest_idx = j;
+                                                closest_dist = squaredDistanceToThisCentroid;
+                                        }
+                                }
+
+                                #pragma omp critical
+                                {
+                                        // Add our point to the next centroid value
+                                        _nextCentroids[closest_idx] += point;
+                                        ++_nextCentroidCounts[closest_idx];
+                                }
+                        }
+
+                        // Move centroids
+                        for (auto i = 0u; i < numberOfCentroids; ++i) {
+                                // The next centroid value is the average of the points that were
+                                //  closest to it.
+                                _centroids[i] = _nextCentroids[i] / _nextCentroidCounts[i];
+                                // Reset the intermediate values
+                                _nextCentroidCounts[i] = 0;
+                                _nextCentroids[i] = (Point) {{0., 0., 0.}};
+                        }
+                }
+                *finalCentroids = _centroids;
+        }
 };
 
 #endif // KMEANS_FUNCTORS_H
