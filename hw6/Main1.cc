@@ -42,7 +42,7 @@ freeAlignedMemory(T ** pointer) {
   *pointer = 0;
 }
 
-int main() [
+int main() {
 
   const unsigned int N = 100;
 

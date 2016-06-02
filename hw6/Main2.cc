@@ -26,6 +26,7 @@ checkResult(const double correctResult,
   char sprintfBuffer[500];
   const double absoluteError = std::abs(correctResult - testResult);
   const double relativeError = std::abs(absoluteError / correctResult);
+  
   if (relativeError > relativeErrorTolerance) {
     sprintf(sprintfBuffer, "wrong result, "
             "it's %e but should be %e, test named "
