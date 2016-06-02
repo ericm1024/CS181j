@@ -118,10 +118,10 @@ ThreadedClusterer {
                 std::fill(_nextCentroids.begin(), _nextCentroids.end(), (Point) {{0., 0., 0.}});
                 std::fill(_nextCentroidCounts.begin(), _nextCentroidCounts.end(), 0);
 
-                // #pragma omp parallel
+                #pragma omp parallel
                 for (auto n = 0u; n < numberOfIterations; ++n) {
 
-                        #pragma omp parallel for
+                        #pragma omp for
                         // Calculate next centroids
                         for (auto i = 0u; i < numberOfPoints; ++i) {
                                 const auto& point = points[i];
@@ -150,6 +150,7 @@ ThreadedClusterer {
                         }
 
                         // Move centroids
+                        #pragma omp for
                         for (auto i = 0u; i < numberOfCentroids; ++i) {
                                 // The next centroid value is the average of the points that were
                                 //  closest to it.
