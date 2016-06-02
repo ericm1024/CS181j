@@ -72,8 +72,8 @@ runSdotTest(const unsigned int numberOfTrials,
 
   for (unsigned int trialNumber = 0;
        trialNumber < numberOfTrials; ++trialNumber) {
-
-    // Start measuring
+          
+          // Start measuring
     const high_resolution_clock::time_point tic = high_resolution_clock::now();
 
     // Do the test
@@ -285,8 +285,8 @@ int main() {
     }
 
     // Calculate the number of trials for this size
-    const unsigned int numberOfTrials =
-      std::max(unsigned(100), unsigned(2e6 / vectorSize));
+    const unsigned int numberOfTrials = 
+            std::max(unsigned(100), unsigned(2e6 / vectorSize));
 
     float elapsedTime;
 
@@ -445,6 +445,7 @@ int main() {
     vector<float> scalarTaylorExponential;
     std::copy(&y[0], &y[vectorSize], std::back_inserter(scalarTaylorExponential));
     fprintf(expFile, ", %10.4e", elapsedTime);
+    std::fill(&y[0], &y[vectorSize], 0);
 
     runTaylorExponentialTest(numberOfTrials,
                              computeTaylorExponential_manual,
@@ -454,6 +455,7 @@ int main() {
                         string("taylor exponential manual"),
                         relativeErrorTolerance);
     fprintf(expFile, ", %10.4e", elapsedTime);
+    std::fill(&y[0], &y[vectorSize], 0);
 
     runTaylorExponentialTest(numberOfTrials,
                              computeTaylorExponential_compiler,

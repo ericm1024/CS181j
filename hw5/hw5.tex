@@ -78,6 +78,7 @@ for (index = 0; index < x.size() - 100; index+=8) {
    simdVector = _mm256_load_ps(&x[index + 96])
 }
 \end{verbatim}
+96 + 8 > 100 (index out of bounds)
 
 \ifSolutions
 \textbf{Solution:}
@@ -246,7 +247,7 @@ Vectorize the k-means calculation and include here the plot of the speedup versu
 
 {
   \begin{center}
-  \includegraphics[width=5 in]{figures/KMeans_speedup_shuffler}
+  \includegraphics[width=5 in]{figures/KMeansClustering_speedup_shuffler}
   \end{center}
 }
 

@@ -58,7 +58,6 @@ integrateFixedPolynomial_compiler(const size_t numberOfIntervals,
   double integral = 0;
   for (size_t intervalIndex = 0;
        intervalIndex < numberOfIntervals; ++intervalIndex) {
-    asm("# keep your grubby mitts out of this loop, autovectorizer!");
     const double value = lowerBound + (intervalIndex + 0.5) * dx;
     integral += c0 + c1 * value + c2 * value * value +
       c3 * value * value * value;
@@ -79,7 +78,6 @@ integrateFixedPolynomial_manual(const size_t numberOfIntervals,
   double integral = 0;
   for (size_t intervalIndex = 0;
        intervalIndex < numberOfIntervals; ++intervalIndex) {
-    asm("# keep your grubby mitts out of this loop, autovectorizer!");
     const double value = lowerBound + (intervalIndex + 0.5) * dx;
     integral += c0 + c1 * value + c2 * value * value +
       c3 * value * value * value;

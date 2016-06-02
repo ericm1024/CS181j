@@ -98,18 +98,19 @@ float
 computeSdot_sseWithPrefetching(const unsigned int size,
                                const float * __restrict__ const x,
                                const float * __restrict__ const y) {
-        _mm_prefetch(x, _MM_HINT_T0);
-        _mm_prefetch(y, _MM_HINT_T0);
+        _mm_prefetch(x, _MM_HINT_NTA);
+        _mm_prefetch(y, _MM_HINT_NTA);
+        /*
         __m256 vsum1 = _mm256_setzero_ps();
         __m256 vsum2 = _mm256_setzero_ps();
         __m256 vsum3 = _mm256_setzero_ps();
         __m256 vsum4 = _mm256_setzero_ps();
-        const auto prefetch_dist = 256;
+        const auto prefetch_dist = 160;
         auto i = 0u;
         for (; i < (size & ~31); i += 32) {
                 // XXX: possibly prefetching memory that isn't ours here?? w/e
-                _mm_prefetch(x + prefetch_dist, _MM_HINT_T0);
-                _mm_prefetch(y + prefetch_dist, _MM_HINT_T0);
+                _mm_prefetch(x + i + prefetch_dist, _MM_HINT_NTA);
+                _mm_prefetch(y + i + prefetch_dist, _MM_HINT_NTA);
                 vsum1 += _mm256_load_ps(x + i) * _mm256_load_ps(y + i);
                 vsum2 += _mm256_load_ps(x + i + 8) * _mm256_load_ps(y + i + 8);
                 vsum1 += _mm256_load_ps(x + i + 16) * _mm256_load_ps(y + i + 16);
@@ -120,7 +121,32 @@ computeSdot_sseWithPrefetching(const unsigned int size,
                 return a[0] + a[1] + a[2] + a[3] + a[4] + a[5] + a[6] + a[7];
         };
 
+        };
+
         float sum = sum256_ps(vsum1 + vsum2 + vsum3 + vsum4);
+        */
+
+        __m128 vsum1 = _mm_setzero_ps();
+        __m128 vsum2 = _mm_setzero_ps();
+        __m128 vsum3 = _mm_setzero_ps();
+        __m128 vsum4 = _mm_setzero_ps();
+        const auto prefetch_dist = 160;
+        auto i = 0u;
+        for (; i < (size & ~15); i += 16) {
+                // XXX: possibly prefetching memory that isn't ours here?? w/e
+                _mm_prefetch(x + i + prefetch_dist, _MM_HINT_NTA);
+                _mm_prefetch(y + i + prefetch_dist, _MM_HINT_NTA);
+                vsum1 += _mm_load_ps(x + i) * _mm_load_ps(y + i);
+                vsum2 += _mm_load_ps(x + i + 4) * _mm_load_ps(y + i + 4);
+                vsum1 += _mm_load_ps(x + i + 8) * _mm_load_ps(y + i + 8);
+                vsum2 += _mm_load_ps(x + i + 12) * _mm_load_ps(y + i + 12);
+        }
+
+        const auto sum128_ps = [](const __m128 a) {
+                return a[0] + a[1] + a[2] + a[3];
+        };
+
+        float sum = sum128_ps(vsum1 + vsum2 + vsum3 + vsum4);
         for (; i < size; ++i)
                 sum += x[i] * y[i];
 

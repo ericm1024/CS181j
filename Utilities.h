@@ -8,6 +8,7 @@
 #include <cmath>
 #include <algorithm>
 #include <numeric>
+#include <array>
 
 // This is a little utility function that can be used to suppress any
 //  compiler warnings about unused variables.
@@ -136,6 +137,24 @@ writeMatrixToFile(const std::vector<std::vector<double> > & matrix,
 constexpr std::size_t operator "" _z(unsigned long long n)
 {
         return n;
+}
+
+template <typename T, std::size_t N>
+std::ostream& operator<< (std::ostream& os, const std::array<T, N>& a)
+{
+        auto i = a.begin();
+        auto end = a.end();
+
+        os << "{";
+        if (i != end) {
+                os << *i++;
+                while (i != end) {
+                        os << ", ";
+                        os << *i++;
+                }
+        }
+        os << "}";
+        return os;
 }
 
 #endif // UTILITIES_H
