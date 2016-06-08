@@ -1,7 +1,7 @@
 CC = g++
-
+#CC=/research/jeff/compilers/llvm_May2016/bin/clang++
 CC_INCLUDE =
-CC_FLAGS = -Wall -Wextra -std=c++11 -fopenmp
+CC_FLAGS = -Wall -Wextra -std=c++1y -fopenmp
 LD_FLAGS =
 
 TARGETS = MaximalIndependentSet KMeansClustering FindIndexOfClosestPoint

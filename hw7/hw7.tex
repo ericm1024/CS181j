@@ -28,8 +28,8 @@ Our first example will be a warm-up.  In \texttt{FindIndexOfNearestPoint\_functi
   \begin{figure}[ht]
     \begin{center}
     \begin{tabular}{cc}
-    \subfloat[log]{\includegraphics[width=3.0in, trim=1.1in .5in .75in .5in]{figures/FindIndexOfClosestPoint_threadedVersusSerial_log_shuffler}} &
-    \subfloat[linear]{\includegraphics[width=3.0in, trim=1.1in .5in .75in .5in]{figures/FindIndexOfClosestPoint_threadedVersusSerial_linear_shuffler}} \\
+    \subfloat[log]{\includegraphics[width=3.0in, trim=1.1in .5in .75in .5in]{figures/FindIndexOfClosestPoint_threadedVersusSerial_log_shuffler.pdf}} &
+    \subfloat[linear]{\includegraphics[width=3.0in, trim=1.1in .5in .75in .5in]{figures/FindIndexOfClosestPoint_threadedVersusSerial_linear_shuffler.pdf}} \\
     \end{tabular}
     \end{center}
     \caption{Performance for FindIndexOfNearestPoint}
@@ -70,12 +70,29 @@ For this problem, we'll return to our recurring example of \href{https://en.wiki
   \begin{figure}[ht]
     \begin{center}
     \begin{tabular}{cc}
-    \subfloat[log]{\includegraphics[width=3.0in, trim=1.1in .5in .75in .5in]{figures/KMeansClustering_threadedVersusSerial_log_shuffler}} &
-    \subfloat[linear]{\includegraphics[width=3.0in, trim=1.1in .5in .75in .5in]{figures/KMeansClustering_threadedVersusSerial_linear_shuffler}} \\
+    \subfloat[log locked]{\includegraphics[width=3.0in, trim={.7in .5in .5in .5in},clip]{figures/KMeansClustering_omp_lockedVersusSerial_log_shuffler.pdf}} &
+    \subfloat[linear locked]{\includegraphics[width=3.0in, trim={.7in .5in .5in .5in},clip]{figures/KMeansClustering_omp_lockedVersusSerial_linear_shuffler.pdf}} \\
+    \subfloat[log atomic]{\includegraphics[width=3.0in, trim={.7in .5in .5in .5in},clip]{figures/KMeansClustering_omp_atomicVersusSerial_log_shuffler}} &
+    \subfloat[linear atomic]{\includegraphics[width=3.0in, trim={.7in .5in .5in .5in},clip]{figures/KMeansClustering_omp_atomicVersusSerial_linear_shuffler}} \\
+    \subfloat[log atomic false sharing]{\includegraphics[width=3.0in, trim={.7in .5in .5in .5in},clip]{figures/KMeansClustering_omp_atomic_false_sharingVersusSerial_log_shuffler}} &
+        \subfloat[linear atomic false sharing]{\includegraphics[width=3.0in, trim={.7in .5in .5in .5in},clip]{figures/KMeansClustering_omp_atomic_false_sharingVersusSerial_linear_shuffler}} \\
     \end{tabular}
     \end{center}
     \caption{Performance for KMeansClustering}
     \label{fig:KMeansClustering}
+  \end{figure}
+
+  \begin{figure}[ht]
+    \begin{center}
+      \begin{tabular}{cc}
+        \subfloat[log thread-local]{\includegraphics[width=3.0in, trim={.7in .5in .5in .5in},clip]{figures/KMeansClustering_omp_thread_localVersusSerial_log_shuffler}} &
+        \subfloat[linear thread-local]{\includegraphics[width=3.0in, trim={.7in .5in .5in .5in},clip]{figures/KMeansClustering_omp_thread_localVersusSerial_linear_shuffler}} \\
+        \subfloat[log moved pragma]{\includegraphics[width=3.0in, trim={.7in .5in .5in .5in},clip]{figures/KMeansClustering_omp_moved_pragmaVersusSerial_log_shuffler}} &
+        \subfloat[linear moved pragma]{\includegraphics[width=3.0in, trim={.7in .5in .5in .5in},clip]{figures/KMeansClustering_omp_moved_pragmaVersusSerial_linear_shuffler}} \\
+      \end{tabular}
+    \end{center}
+    \caption{Performance for KMeansClustering 2}
+    \label{fig:KMeansClustering2}
   \end{figure}
 }
 
