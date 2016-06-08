@@ -26,7 +26,26 @@ bool
 findKeyInSortedNumbers_cpu(const unsigned int * const sortedNumbers,
                            const unsigned int numberOfSortedNumbers,
                            const unsigned int key) {
-  // TODO
+
+        unsigned first = 0, last = numberOfSortedNumbers - 1;
+        const unsigned linear_search_cutoff = 20;
+
+        while (last - first > linear_search_cutoff) {
+                unsigned midx = first + (last - first)/2;
+                auto mid = sortedNumbers[midx];
+                if (mid < key)
+                        first = midx+1;
+                else if (mid > key)
+                        last = midx-1;
+                else
+                        return true;
+        }
+
+        for (auto i = first; i <= last; ++i)
+                if (sortedNumbers[i] == key)
+                        return true;
+
+        return false;
 }
 
 bool

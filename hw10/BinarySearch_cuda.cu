@@ -6,21 +6,42 @@
 #include <cassert>
 #include <cfloat>
 
+#include <iostream>
+
 #include <cuda_runtime.h>
 
 #include "BinarySearch_cuda.cuh"
 #include "../GpuUtilities.h"
 
 __global__
-void
+static void
 findKeysInSortedNumbers_kernel(const unsigned int * __restrict__ sortedNumbers,
                                const unsigned int numberOfSortedNumbers,
                                const unsigned int * __restrict__ input,
                                const unsigned int inputSize,
                                bool * __restrict__ output) {
 
-  // TODO
+        for (unsigned i = blockIdx.x * blockDim.x + threadIdx.x;
+             i < inputSize; i += blockDim.x * gridDim.x) {
 
+                unsigned first = 0, last = numberOfSortedNumbers - 1;
+                auto key = input[i];
+
+                output[i] = false;
+
+                while (first <= last) {
+                        unsigned midx = first + (last - first)/2;
+                        auto mid = sortedNumbers[midx];
+                        if (mid < key)
+                                first = midx+1;
+                        else if (mid > key)
+                                last = midx-1;
+                        else {
+                                output[i] = true;
+                                break;
+                        }
+                }
+        }
 }
 
 void
@@ -66,6 +87,12 @@ runGpuTimingTest(const unsigned int numberOfTrials,
   for (unsigned int trialNumber = 0;
        trialNumber < numberOfTrials; ++trialNumber) {
 
+          std::cout << __func__ << "trialNumber=" << trialNumber
+                    << " maxNumberOfBlocks=" << maxNumberOfBlocks
+                    << " numberOfThreadsPerBlock=" << numberOfThreadsPerBlock
+                    << " numberOfSortedNumbers=" << numberOfSortedNumbers
+                    << std::endl;
+          
     // this forces the GPU to run another kernel, kind of like
     //  "resetting the cache" for the cpu versions.
     GpuUtilities::resetGpu();

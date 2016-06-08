@@ -18,7 +18,7 @@ else
   CC              := g++
   NVCCSCC         := $(CC)
   # cuda
-  CUDA_PATH       ?= /usr/local/cuda-7.0
+  CUDA_PATH       ?= /opt/cuda-7.5
   CUDA_LIB_PATH   ?= $(CUDA_PATH)/lib64/
   ifeq ($(OS_SIZE),32)
     CC_FLAGS      += -m32
@@ -43,7 +43,7 @@ CUDA_BIN_PATH   ?= $(CUDA_PATH)/bin
 NVCC            ?= $(CUDA_BIN_PATH)/nvcc
 
 CC_FLAGS        += -O3 -std=c++11 -Wall -Wextra
-NVCC_FLAGS      += -O3
+NVCC_FLAGS      += -O3 -std=c++11
 
 TARGETS = BinarySearch KMeansClustering MatrixMultiplication ReductionRace
 
