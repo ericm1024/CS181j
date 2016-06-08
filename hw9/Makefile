@@ -22,7 +22,7 @@ else
   CC              := g++
   NVCCSCC         := $(CC)
   # cuda
-  CUDA_PATH       ?= /usr/local/cuda-7.0
+  CUDA_PATH       ?= /opt/cuda-7.5
   CUDA_LIB_PATH   ?= $(CUDA_PATH)/lib64/
   ifeq ($(OS_SIZE),32)
     CC_FLAGS      += -m32
@@ -47,6 +47,7 @@ CUDA_BIN_PATH   ?= $(CUDA_PATH)/bin
 NVCC            ?= $(CUDA_BIN_PATH)/nvcc
 
 NVCC_FLAGS      += -O3
+NVCC_FLAGS      += --std=c++11
 
 TARGETS = Main0 Threaded1DFDWave Main2 Main3 Main4
 

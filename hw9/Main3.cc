@@ -1,6 +1,7 @@
 // -*- C++ -*-
 // Main3.cc
 // cs181j hw9 Problem 1
+
 // A simple example of calculating a weird function on cpu and gpu
 
 // Many of the homework assignments have definitions that are common across
@@ -59,9 +60,12 @@ int main(int argc, char * argv[]) {
 
   // do the same calculation on the gpu
   vector<double> gpuOutput(inputSize,
-                          std::numeric_limits<double>::quiet_NaN());
+                           std::numeric_limits<double>::quiet_NaN());
   // TODO: you'll probably need to change this function call
-  calculateWeirdFunction_cuda(maxNumberOfBlocks,
+  calculateWeirdFunction_cuda(input.data(),
+                              gpuOutput.data(),
+                              inputSize,
+                              maxNumberOfBlocks,
                               numberOfThreadsPerBlock);
   // check our answer
   for (unsigned int index = 0; index < inputSize; ++index) {

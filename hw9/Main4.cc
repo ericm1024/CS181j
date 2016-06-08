@@ -10,6 +10,8 @@
 // These utilities are used on many assignments
 #include "../Utilities.h"
 
+#include <iostream>
+
 using std::string;
 using std::vector;
 using std::array;
@@ -211,18 +213,22 @@ int main() {
       vector<float> gpuOutput(inputSize,
                               std::numeric_limits<float>::quiet_NaN());
       try {
+              
         // TODO: you'll probably have to change this function call
         runGpuTimingTest(numberOfTrials,
+                         input,
+                         coefficients,
                          maxNumberOfBlocks,
                          numberOfThreadsPerBlock,
+                         &gpuOutput,
                          &gpuTimes[sizeIndex][orderIndex]);
         checkResult(cpuOutput,
                     gpuOutput,
                     absoluteErrorTolerance,
                     std::string("gpu"));
       } catch (const std::exception & e) {
-        fprintf(stderr, "error caught attempting input size %zu "
-                "and polynomial order %zu\n", inputSize, polynomialOrder);
+        fprintf(stderr, "error (%s) caught attempting input size %zu "
+                "and polynomial order %zu\n", e.what(), inputSize, polynomialOrder);
         throw;
       }
 
@@ -331,11 +337,15 @@ int main() {
         vector<float> gpuOutput(inputSize,
                                 std::numeric_limits<float>::quiet_NaN());
         try {
-          // TODO: you'll probably have to change this function call
-          runGpuTimingTest(numberOfTrials,
-                           maxNumberOfBlocks,
-                           numberOfThreadsPerBlock,
-                           &gpuElapsedTime);
+                // TODO: you'll probably have to change this function call
+                runGpuTimingTest(numberOfTrials,
+                                 input,
+                                 coefficients,
+                                 maxNumberOfBlocks,
+                                 numberOfThreadsPerBlock,
+                                 &gpuOutput,
+                                 &gpuElapsedTime);
+          
           checkResult(cpuOutput,
                       gpuOutput,
                       absoluteErrorTolerance,

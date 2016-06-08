@@ -23,6 +23,9 @@ gpuAssert(const cudaError_t code, const char *file, const int line, bool abort=t
   }
 }
 
+// included here because dev_mem depends on checkCudaError
+#include "dev_mem.hpp"
+
 // This is a little utility function that can be used to suppress any
 //  compiler warnings about unused variables.
 #pragma GCC diagnostic push
