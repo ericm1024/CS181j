@@ -1,12 +1,16 @@
 #pragma once
 #include <cstddef>
 #include <stdexcept>
+#include <type_traits>
+#include <array>
+#include <vector>
 
 template <typename T>
 class dev_mem {
 public:
         using value_type = T;
         using pointer = T*;
+        using const_pointer = typename std::add_const<T>::type*;
 
 private:
         pointer mem_;
@@ -30,12 +34,21 @@ public:
         }
 
         // DATA IS HOST MEMORY
-        dev_mem(pointer data, std::size_t n)
+        dev_mem(const_pointer data, std::size_t n)
                 : dev_mem{n}
         {
                 checkCudaError(cudaMemcpy((void*)mem_, data, n * sizeof(T),
                                           cudaMemcpyHostToDevice));
         }
+
+        dev_mem(const std::vector<T>& data)
+                : dev_mem{data.data(), data.size()}
+        {}
+
+        template <std::size_t n>
+        dev_mem(const std::array<T, n>& data)
+                : dev_mem{data.data(), n}
+        {}
 
         ~dev_mem()
         {
@@ -84,6 +97,11 @@ public:
 
                 checkCudaError(cudaMemcpy(out, mem_, size*sizeof(T),
                                           cudaMemcpyDeviceToHost));
+        }
+
+        void write_to(std::vector<T>& out) const
+        {
+                return write_to(out.data(), out.size());
         }
 };
 

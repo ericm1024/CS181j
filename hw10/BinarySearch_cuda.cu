@@ -24,19 +24,22 @@ findKeysInSortedNumbers_kernel(const unsigned int * __restrict__ sortedNumbers,
         for (unsigned i = blockIdx.x * blockDim.x + threadIdx.x;
              i < inputSize; i += blockDim.x * gridDim.x) {
 
-                unsigned first = 0, last = numberOfSortedNumbers - 1;
                 auto key = input[i];
-
                 output[i] = false;
 
-                while (first <= last) {
-                        unsigned midx = first + (last - first)/2;
-                        auto mid = sortedNumbers[midx];
-                        if (mid < key)
-                                first = midx+1;
-                        else if (mid > key)
-                                last = midx-1;
-                        else {
+                // code stolen from llvm's lower_bound because I'm a piece of shit
+                // https://github.com/llvm-mirror/libcxx/blob/master/include/algorithm#L4133
+                auto len = numberOfSortedNumbers;
+                auto start = sortedNumbers;
+                while (len) {
+                        auto l2 = len/2;
+                        auto mid = start + l2;
+                        if (*mid < key) {
+                                start += l2 + 1;
+                                len -= l2 + 1;
+                        } else if (*mid > key) {
+                                len = l2;
+                        } else {
                                 output[i] = true;
                                 break;
                         }
@@ -87,11 +90,13 @@ runGpuTimingTest(const unsigned int numberOfTrials,
   for (unsigned int trialNumber = 0;
        trialNumber < numberOfTrials; ++trialNumber) {
 
+          /*
           std::cout << __func__ << "trialNumber=" << trialNumber
                     << " maxNumberOfBlocks=" << maxNumberOfBlocks
                     << " numberOfThreadsPerBlock=" << numberOfThreadsPerBlock
                     << " numberOfSortedNumbers=" << numberOfSortedNumbers
                     << std::endl;
+          */
           
     // this forces the GPU to run another kernel, kind of like
     //  "resetting the cache" for the cpu versions.

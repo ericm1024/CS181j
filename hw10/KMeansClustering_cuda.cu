@@ -23,140 +23,225 @@ setArray_kernel(const unsigned int arraySize,
     array[arrayIndex] = value;
     arrayIndex += blockDim.x * gridDim.x;
   }
+}
 
+// design of GPU k-means clustering implementation:
+//     We perform a fixed number of iterations. each iteration is performed
+//     using 2 kernels:
+//         - The first kernel calculates the next_centroid locations and counts.
+//           This calculation is done using block-local shared memory. To reduce
+//           the result, the shared memory contents are moved to global memory at
+//           the end of the kernel.
+//         - The second kernel reduces the block local results and moves the
+//           centroids to their location for the next iteration
+
+__global__ static void
+find_local_centroids_kernel(const float * points,
+                            const unsigned nr_points,
+                            float *centroids,
+                            const unsigned nr_centroids,
+                            float *next_centroids, // size = nr_centroids*3*nr_blocks
+                            unsigned *next_centroid_counts) // size = nr_centroids*nr_blocks
+{
+        extern __shared__ uint8_t mem[];
+        
+        // has nr_centroids*3 elements
+        float *local_next_centroids = (float*) mem;
+        // has nr_centroids elements
+        unsigned *local_next_centroid_counts = (unsigned*)(local_next_centroids + nr_centroids*3);
+
+        // zero out block-local data in preparation for next iteration
+        for (auto i = threadIdx.x; i < nr_centroids*3; i += blockDim.x)
+                local_next_centroids[i] = 0;
+
+        for (auto i = threadIdx.x; i < nr_centroids; i += blockDim.x)
+                local_next_centroid_counts[i] = 0;
+
+        // calculate the next set of centroids; paralell over points
+        for (unsigned i = blockIdx.x * blockDim.x + threadIdx.x;
+             i < nr_points; i += blockDim.x * gridDim.x) {
+                float point_x = points[i];
+                float point_y = points[i+nr_points];
+                float point_z = points[i+nr_points*2];
+                unsigned closest_idx = 0;
+                float closest_distance = FLT_MAX;
+                        
+                // find the centroid closest to this thread's point
+                for (auto j = 0u; j < nr_centroids; ++j) {
+                        const float dx = centroids[j] - point_x;
+                        const float dy = centroids[j+nr_centroids] - point_y;
+                        const float dz = centroids[j+nr_centroids*2] - point_z;
+                        const float distance = dx*dx + dy*dy + dz+dz;
+
+                        if (distance < closest_distance) {
+                                closest_distance = distance;
+                                closest_idx = j;
+                        }
+                }
+                
+                // write to the block-local next_centroids and counts using a sort of
+                // "waiting sychronization" where each thread takes a turn
+                __syncthreads();
+                for (auto j = 0u; j < blockDim.x; ++j) {
+                        if (j == threadIdx.x) {
+                                local_next_centroids[closest_idx] += point_x;
+                                local_next_centroids[nr_centroids + closest_idx] += point_y;
+                                local_next_centroids[nr_centroids*2 + closest_idx] += point_z;
+                                ++local_next_centroid_counts[closest_idx];
+                        }
+                        __syncthreads();
+                }
+        }
+
+        // send the local shared memory to global memory
+        const unsigned blk_base = blockIdx.x*nr_centroids;
+        for (unsigned i = threadIdx.x; i < nr_centroids*3; i += blockDim.x)
+                next_centroids[blk_base+i] = local_next_centroids[i];
+
+        for (unsigned i = threadIdx.x; i < nr_centroids; i += blockDim.x)
+                next_centroid_counts[blk_base+i] = local_next_centroid_counts[i];
+}
+
+__global__ static void
+reduce_and_move_centroids_kernel(float *centroids,
+                                 const unsigned nr_centroids,
+                                 float *next_centroids, // size = nr_centroids*3*nr_blocks
+                                 unsigned *next_centroid_counts, // size = nr_centroids*nr_blocks_centroids
+                                 unsigned nr_blocks_centroids) // number of blocks used for the above kernel
+{        
+        for (unsigned i = blockIdx.x * blockDim.x + threadIdx.x;
+             i < nr_centroids; i += blockDim.x * gridDim.x) {
+                float x_accum = 0;
+                float y_accum = 0;
+                float z_accum = 0;
+                unsigned count_accum = 0;
+
+                // reduce the per-block results
+                for (auto j = 0u; j < nr_blocks_centroids; ++j) {
+                        const unsigned base = j*nr_centroids;
+                        const unsigned point_base = base*3;
+                        x_accum += next_centroids[point_base+i];
+                        y_accum += next_centroids[point_base+i+nr_centroids];
+                        z_accum += next_centroids[point_base+i+nr_centroids*2];
+                        count_accum += next_centroid_counts[base+i];
+                }
+
+                // move the centroids
+                if (count_accum > 0) {
+                        centroids[i] = x_accum/count_accum;
+                        centroids[i+nr_centroids] = y_accum/count_accum;
+                        centroids[i+nr_centroids*2] = z_accum/count_accum;
+                }
+        }
+}
+
+static void points_aos_to_soa(const float *aos, std::vector<float>& soa)
+{
+        auto size = soa.size()/3;
+        for (auto i = 0u; i < size; ++i)
+                for (auto j = 0u; j < 3; ++j)
+                        soa.at(j*size + i) = aos[i*3 + j];
+}
+
+static void point_soa_to_aos(const std::vector<float>& soa, float *aos)
+{
+        auto size = soa.size()/3;
+        for (auto i = 0u; i < size; ++i)
+                for (auto j = 0u; j < 3; ++j)
+                        aos[i*3 + j] = soa.at(j*size + i);
 }
 
 void
 runGpuTimingTest(const unsigned int numberOfTrials,
                  const unsigned int maxNumberOfBlocks,
                  const unsigned int numberOfThreadsPerBlock,
-                 const float * const points_Cpu_AoS,
+                 const float * const points_cpu,
                  const unsigned int numberOfPoints,
-                 const float * const startingCentroids_Cpu_AoS,
+                 const float * const starting_centroids_cpu,
                  const unsigned int numberOfCentroids,
                  const unsigned int numberOfIterations,
                  float * const finalCentroids_Cpu_AoS,
                  float * const elapsedTime) {
 
-  // Make Cpu versions of the data that we'll need to ship to the Gpu
-  float * const points_gpuLayout = new float[numberOfPoints * 3];
-  for (unsigned int pointIndex = 0;
-       pointIndex < numberOfPoints; ++pointIndex) {
-    for (unsigned int coordinate = 0; coordinate < 3; ++coordinate) {
-      points_gpuLayout[coordinate * numberOfPoints + pointIndex] =
-        points_Cpu_AoS[pointIndex * 3 + coordinate];
-    }
-  }
+        // calculate the number of blocks
+        const unsigned int numberOfBlocksForPoints =
+                min(maxNumberOfBlocks,
+                    (unsigned int)ceil(numberOfPoints/float(numberOfThreadsPerBlock)));
 
-  float * const startingCentroids_gpuLayout = new float[numberOfCentroids * 3];
-  for (unsigned int centroidIndex = 0;
-       centroidIndex < numberOfCentroids; ++centroidIndex) {
-    for (unsigned int coordinate = 0; coordinate < 3; ++coordinate) {
-      startingCentroids_gpuLayout[coordinate * numberOfCentroids + centroidIndex] =
-        startingCentroids_Cpu_AoS[centroidIndex * 3 + coordinate];
-    }
-  }
+        // all this work, and it's honestly just like 2
+        const unsigned int numberOfBlocksForCentroids =
+                min(maxNumberOfBlocks,
+                    (unsigned int)ceil(numberOfCentroids/float(numberOfThreadsPerBlock)));
 
-  // Allocate device-side points
-  float * dev_points;
-  checkCudaError(cudaMalloc((void **) &dev_points,
-                            numberOfPoints * 3 * sizeof(float)));
-  float * dev_centroids;
-  checkCudaError(cudaMalloc((void **) &dev_centroids,
-                            numberOfCentroids * 3 * sizeof(float)));
-  float * dev_nextCentroids;
-  checkCudaError(cudaMalloc((void **) &dev_nextCentroids,
-                            numberOfCentroids * 3 * sizeof(float)));
-  unsigned int * dev_nextCentroidCounts;
-  checkCudaError(cudaMalloc((void **) &dev_nextCentroidCounts,
-                            numberOfCentroids * 1 * sizeof(unsigned int)));
+        // prepare soa layout data
+        std::vector<float> points_gpu(numberOfPoints*3);
+        std::vector<float> starting_centroids_gpu(numberOfCentroids*3);
+        points_aos_to_soa(points_cpu, points_gpu);
+        points_aos_to_soa(starting_centroids_cpu, starting_centroids_gpu);
 
-  // Copy host inputs to device
-  checkCudaError(cudaMemcpy(dev_points, points_gpuLayout,
-                            numberOfPoints * 3 * sizeof(float),
-                            cudaMemcpyHostToDevice));
+        // Allocate device-side points
+        dev_mem<float> dev_points{points_gpu};
+        dev_mem<float> dev_centroids{starting_centroids_gpu};
+        dev_mem<float> dev_nextCentroids{numberOfCentroids * 3 * numberOfBlocksForPoints};
+        dev_mem<unsigned> dev_nextCentroidCounts{numberOfCentroids * 3 * numberOfBlocksForPoints};
 
-  // set next centroids and next centroid counts to zero
-  setArray_kernel<unsigned int><<<ceil(numberOfCentroids / 512.),
-    512>>>(numberOfCentroids,
-           0,
-           dev_nextCentroidCounts);
-  // set next centroids and next centroid counts to zero
-  setArray_kernel<float><<<ceil(numberOfCentroids * 3 / 512.),
-    512>>>(numberOfCentroids * 3,
-           0,
-           dev_nextCentroids);
+        *elapsedTime = std::numeric_limits<float>::max();
 
-  // calculate the number of blocks
-  const unsigned int numberOfBlocksForPoints =
-    min(maxNumberOfBlocks,
-        (unsigned int)ceil(numberOfPoints/float(numberOfThreadsPerBlock)));
-  // all this work, and it's honestly just like 2
-  const unsigned int numberOfBlocksForCentroids =
-    min(maxNumberOfBlocks,
-        (unsigned int)ceil(numberOfCentroids/float(numberOfThreadsPerBlock)));
+        // run the test repeatedly
+        for (unsigned int trialNumber = 0;
+             trialNumber < numberOfTrials; ++trialNumber) {
 
-  *elapsedTime = DBL_MAX; // sigh, no numeric_limits
+                // Reset intermediate values for next calculation
+                checkCudaError(cudaMemcpy(dev_centroids, starting_centroids_gpu.data(),
+                                          numberOfCentroids * 3 * sizeof(float),
+                                          cudaMemcpyHostToDevice));
 
-  // run the test repeatedly
-  for (unsigned int trialNumber = 0;
-       trialNumber < numberOfTrials; ++trialNumber) {
+                // this forces the GPU to run another kernel, kind of like
+                //  "resetting the cache" for the cpu versions.
+                GpuUtilities::resetGpu();
 
-    // Reset intermediate values for next calculation
-    checkCudaError(cudaMemcpy(dev_centroids, startingCentroids_gpuLayout,
-                              numberOfCentroids * 3 * sizeof(float),
-                              cudaMemcpyHostToDevice));
+                // Wait for any kernels to stop
+                checkCudaError(cudaDeviceSynchronize());
 
-    // this forces the GPU to run another kernel, kind of like
-    //  "resetting the cache" for the cpu versions.
-    GpuUtilities::resetGpu();
+                // Start timing
+                auto tic = TimeUtility::getCurrentTime();
 
-    // Wait for any kernels to stop
-    checkCudaError(cudaDeviceSynchronize());
+                // For each of a fixed number of iterations
+                for (auto n = 0u; n < numberOfIterations; ++n) {
 
-    // Start timing
-    const TimeUtility::PreCpp11TimePoint tic = TimeUtility::getCurrentTime();
+                        find_local_centroids_kernel<<<numberOfBlocksForPoints,
+                                                      numberOfThreadsPerBlock,
+                                                      numberOfCentroids*3*sizeof(float)
+                                                          + numberOfCentroids*sizeof(unsigned)
+                                                   >>>(dev_points, dev_points.size()/3,
+                                                       dev_centroids, dev_centroids.size()/3,
+                                                       dev_nextCentroids, dev_nextCentroidCounts);
 
+                        // XXX is this needed? wait for the first kernel to finish before running the second?
+                        checkCudaError(cudaDeviceSynchronize());
+                        
+                        reduce_and_move_centroids_kernel<<<numberOfBlocksForCentroids,
+                                                           numberOfThreadsPerBlock
+                                                        >>>(dev_centroids, dev_centroids.size()/3,
+                                                            dev_nextCentroids, dev_nextCentroidCounts,
+                                                            numberOfBlocksForPoints);
 
-    // For each of a fixed number of iterations
-    for (unsigned int iterationNumber = 0;
-         iterationNumber < numberOfIterations; ++iterationNumber) {
+                        // See if there was an error in the kernel launch
+                        checkCudaError(cudaPeekAtLastError());
+                }
 
-      // TODO: one or more kernels
+                // Wait for the kernels to stop
+                checkCudaError(cudaDeviceSynchronize());
 
-      // See if there was an error in the kernel launch
-      checkCudaError(cudaPeekAtLastError());
-    }
+                // Stop timing
+                auto toc = TimeUtility::getCurrentTime();
+                const float thisTrialsElapsedTime =
+                        TimeUtility::getElapsedTime(tic, toc);
+                *elapsedTime = std::min(*elapsedTime, thisTrialsElapsedTime);
+        }
 
-    // Wait for the kernels to stop
-    checkCudaError(cudaDeviceSynchronize());
-
-    // Stop timing
-    const TimeUtility::PreCpp11TimePoint toc = TimeUtility::getCurrentTime();
-    const float thisTrialsElapsedTime =
-      TimeUtility::getElapsedTime(tic, toc);
-    *elapsedTime = std::min(*elapsedTime, thisTrialsElapsedTime);
-  }
-
-  // copy device outputs back to host
-  float * finalCentroids_gpuLayout = new float[numberOfCentroids * 3];
-  checkCudaError(cudaMemcpy(finalCentroids_gpuLayout, dev_centroids,
-                            numberOfCentroids * 3 * sizeof(float),
-                            cudaMemcpyDeviceToHost));
-
-  for (unsigned int centroidIndex = 0;
-       centroidIndex < numberOfCentroids; ++centroidIndex) {
-    for (unsigned int coordinate = 0; coordinate < 3; ++coordinate) {
-      finalCentroids_Cpu_AoS[centroidIndex * 3 + coordinate] =
-        finalCentroids_gpuLayout[coordinate * numberOfCentroids + centroidIndex];
-    }
-  }
-
-  checkCudaError(cudaFree(dev_points));
-  checkCudaError(cudaFree(dev_centroids));
-  checkCudaError(cudaFree(dev_nextCentroids));
-  checkCudaError(cudaFree(dev_nextCentroidCounts));
-  delete[] points_gpuLayout;
-  delete[] startingCentroids_gpuLayout;
-  delete[] finalCentroids_gpuLayout;
+        // copy device outputs back to host
+        std::vector<float> final_centroids_gpu(dev_centroids.size());
+        dev_centroids.write_to(final_centroids_gpu);
+        point_soa_to_aos(final_centroids_gpu, finalCentroids_Cpu_AoS);
 }
