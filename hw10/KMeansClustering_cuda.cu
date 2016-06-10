@@ -78,19 +78,15 @@ find_local_centroids_kernel(const float * points,
                                 closest_idx = j;
                         }
                 }
-                
-                // write to the block-local next_centroids and counts using a sort of
-                // "waiting sychronization" where each thread takes a turn
-                __syncthreads();
-                for (auto j = 0u; j < blockDim.x; ++j) {
-                        if (j == threadIdx.x) {
-                                local_next_centroids[closest_idx] += point_x;
-                                local_next_centroids[nr_centroids + closest_idx] += point_y;
-                                local_next_centroids[nr_centroids*2 + closest_idx] += point_z;
-                                ++local_next_centroid_counts[closest_idx];
-                        }
-                        __syncthreads();
-                }
+
+                atomicAdd(local_next_centroids + closest_idx,
+                          point_x);
+                atomicAdd(local_next_centroids + nr_centroids + closest_idx,
+                          point_y);
+                atomicAdd(local_next_centroids + nr_centroids*2 + closest_idx,
+                          point_z);
+                atomicAdd(local_next_centroid_counts + closest_idx,
+                          1);
         }
 
         // send the local shared memory to global memory
@@ -103,35 +99,44 @@ find_local_centroids_kernel(const float * points,
 }
 
 __global__ static void
-reduce_and_move_centroids_kernel(float *centroids,
-                                 const unsigned nr_centroids,
-                                 float *next_centroids, // size = nr_centroids*3*nr_blocks
-                                 unsigned *next_centroid_counts, // size = nr_centroids*nr_blocks_centroids
-                                 unsigned nr_blocks_centroids) // number of blocks used for the above kernel
-{        
+reduce_counts_kernel(const unsigned nr_centroids,
+                     unsigned *next_centroid_counts, // size = nr_centroids*nr_point_blocks
+                     const unsigned nr_point_blocks)
+{
+        // first reduce next_centroid_counts into the first nr_centroids slots of
+        // that array
         for (unsigned i = blockIdx.x * blockDim.x + threadIdx.x;
              i < nr_centroids; i += blockDim.x * gridDim.x) {
-                float x_accum = 0;
-                float y_accum = 0;
-                float z_accum = 0;
                 unsigned count_accum = 0;
+                
+                for (auto j = 0u; j < nr_point_blocks; ++j)
+                        count_accum += next_centroid_counts[j*nr_centroids+i];
 
-                // reduce the per-block results
-                for (auto j = 0u; j < nr_blocks_centroids; ++j) {
-                        const unsigned base = j*nr_centroids;
-                        const unsigned point_base = base*3;
-                        x_accum += next_centroids[point_base+i];
-                        y_accum += next_centroids[point_base+i+nr_centroids];
-                        z_accum += next_centroids[point_base+i+nr_centroids*2];
-                        count_accum += next_centroid_counts[base+i];
-                }
+                next_centroid_counts[i] = count_accum;
+        }
+}
+
+__global__ static void
+move_centroids_kernel(float *centroids,
+                      const unsigned nr_centroids,
+                      float *next_centroids, // size = nr_centroids*3*nr_blocks
+                      unsigned *next_centroid_counts, // size = nr_centroids*nr_point_blocks
+                      const unsigned nr_point_blocks) // number of blocks used for the above kernel
+{
+        // now move the centroids. Since each coordinate is independent, we can
+        // do them in parallel
+        for (unsigned i = blockIdx.x * blockDim.x + threadIdx.x;
+             i < nr_centroids*3; i += blockDim.x * gridDim.x) {
+                unsigned count = next_centroid_counts[i%nr_centroids];
+                float accum = 0;
+
+                // reduce the per-block coordinates
+                for (auto j = 0u; j < nr_point_blocks; ++j)
+                        accum += next_centroids[j*nr_centroids + i];
 
                 // move the centroids
-                if (count_accum > 0) {
-                        centroids[i] = x_accum/count_accum;
-                        centroids[i+nr_centroids] = y_accum/count_accum;
-                        centroids[i+nr_centroids*2] = z_accum/count_accum;
-                }
+                if (count > 0)
+                        centroids[i] = accum/count;
         }
 }
 
@@ -210,21 +215,24 @@ runGpuTimingTest(const unsigned int numberOfTrials,
                 for (auto n = 0u; n < numberOfIterations; ++n) {
 
                         find_local_centroids_kernel<<<numberOfBlocksForPoints,
-                                                      numberOfThreadsPerBlock,
-                                                      numberOfCentroids*3*sizeof(float)
-                                                          + numberOfCentroids*sizeof(unsigned)
+                                numberOfThreadsPerBlock,
+                                numberOfCentroids*3*sizeof(float)
+                                + numberOfCentroids*sizeof(unsigned)
                                                    >>>(dev_points, dev_points.size()/3,
                                                        dev_centroids, dev_centroids.size()/3,
                                                        dev_nextCentroids, dev_nextCentroidCounts);
 
-                        // XXX is this needed? wait for the first kernel to finish before running the second?
-                        checkCudaError(cudaDeviceSynchronize());
+                        reduce_counts_kernel<<<numberOfBlocksForCentroids,
+                                numberOfThreadsPerBlock
+                                            >>>(dev_centroids.size()/3,
+                                                dev_nextCentroidCounts,
+                                                numberOfBlocksForPoints);
                         
-                        reduce_and_move_centroids_kernel<<<numberOfBlocksForCentroids,
-                                                           numberOfThreadsPerBlock
-                                                        >>>(dev_centroids, dev_centroids.size()/3,
-                                                            dev_nextCentroids, dev_nextCentroidCounts,
-                                                            numberOfBlocksForPoints);
+                        move_centroids_kernel<<<numberOfBlocksForCentroids,
+                                numberOfThreadsPerBlock
+                                             >>>(dev_centroids, dev_centroids.size()/3,
+                                                 dev_nextCentroids, dev_nextCentroidCounts,
+                                                 numberOfBlocksForPoints);
 
                         // See if there was an error in the kernel launch
                         checkCudaError(cudaPeekAtLastError());
