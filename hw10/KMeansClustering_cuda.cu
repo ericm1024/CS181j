@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cassert>
 #include <cfloat>
+#include <iostream>
 
 #include <cuda_runtime.h>
 
@@ -57,13 +58,15 @@ find_local_centroids_kernel(const float * points,
         for (auto i = threadIdx.x; i < nr_centroids; i += blockDim.x)
                 local_next_centroid_counts[i] = 0;
 
+        __syncthreads();
+
         // calculate the next set of centroids; paralell over points
         for (unsigned i = blockIdx.x * blockDim.x + threadIdx.x;
              i < nr_points; i += blockDim.x * gridDim.x) {
                 float point_x = points[i];
                 float point_y = points[i+nr_points];
                 float point_z = points[i+nr_points*2];
-                unsigned closest_idx = 0;
+                unsigned closest_idx = UINT_MAX;
                 float closest_distance = FLT_MAX;
                         
                 // find the centroid closest to this thread's point
@@ -71,7 +74,7 @@ find_local_centroids_kernel(const float * points,
                         const float dx = centroids[j] - point_x;
                         const float dy = centroids[j+nr_centroids] - point_y;
                         const float dz = centroids[j+nr_centroids*2] - point_z;
-                        const float distance = dx*dx + dy*dy + dz+dz;
+                        const float distance = dx*dx + dy*dy + dz*dz;
 
                         if (distance < closest_distance) {
                                 closest_distance = distance;
@@ -89,10 +92,12 @@ find_local_centroids_kernel(const float * points,
                           1);
         }
 
+        __syncthreads();
+
         // send the local shared memory to global memory
         const unsigned blk_base = blockIdx.x*nr_centroids;
         for (unsigned i = threadIdx.x; i < nr_centroids*3; i += blockDim.x)
-                next_centroids[blk_base+i] = local_next_centroids[i];
+                next_centroids[blk_base*3+i] = local_next_centroids[i];
 
         for (unsigned i = threadIdx.x; i < nr_centroids; i += blockDim.x)
                 next_centroid_counts[blk_base+i] = local_next_centroid_counts[i];
@@ -132,7 +137,7 @@ move_centroids_kernel(float *centroids,
 
                 // reduce the per-block coordinates
                 for (auto j = 0u; j < nr_point_blocks; ++j)
-                        accum += next_centroids[j*nr_centroids + i];
+                        accum += next_centroids[j*nr_centroids*3 + i];
 
                 // move the centroids
                 if (count > 0)
