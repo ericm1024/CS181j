@@ -1,6 +1,7 @@
 figures/
 data/
 *.log
+*.o
 *.aux
 *.pdf
 *.out
